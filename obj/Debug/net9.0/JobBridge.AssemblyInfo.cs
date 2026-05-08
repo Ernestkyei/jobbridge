@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("JobBridge")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6fe3a8d6fa2a4c6cd0813873497a57b24ebf9ed7")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+60746e173ad72d0d7eba10a105f4f65c972ff85b")]
 [assembly: System.Reflection.AssemblyProductAttribute("JobBridge")]
 [assembly: System.Reflection.AssemblyTitleAttribute("JobBridge")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
