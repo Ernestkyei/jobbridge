@@ -1,0 +1,199 @@
+@using JobBridge.Data
+@using Microsoft.AspNetCore.Components.Authorization
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IJSRuntime JSRuntime
+
+
+<div class="job-card">
+    <a href="@($"jobs/{JobPost.Id}")">
+        <div class="job-card-header">
+            <div class="company-info">
+                <div class="company-logo">
+                    @GetCompanyInitials(JobPost.Employer.Name)
+                </div>
+                <div class="company-details">
+                    <h3 class="job-title">@JobPost.JobTitle</h3>
+                    <p class="company-name">@JobPost.Employer.Name</p>
+                </div>
+            </div>
+            @* <div class="job-actions">
+                <button class="btn-icon bookmark-btn @(JobPost.IsBookmarked ? "bookmarked" : "")" 
+                        @onclick:stopPropagation="true" 
+                        @onclick="() => ToggleBookmark(JobPost.Id)">
+                    <span class="bookmark-icon">@(JobPost.IsBookmarked ? "❤️" : "🤍")</span>
+                </button>
+            </div> *@
+        </div>
+
+        <div class="job-card-body">
+            <div class="job-meta">
+                <span class="job-location">
+                    <span class="meta-icon" aria-hidden="true">📍</span>
+                    <span class="visually-hidden">Location: </span>
+                    @JobPost.Location
+                </span>
+                <span class="job-type">
+                    <span class="meta-icon" aria-hidden="true">💼</span>
+                    <span class="visually-hidden">Employment Type: </span>
+                    @JobPost.EmploymentType
+                </span>
+                <span class="job-experience">
+                    <span class="meta-icon" aria-hidden="true">⭐</span>
+                    <span class="visually-hidden">Experience Level: </span>
+                    @JobPost.ExperienceLevel
+                </span>
+            </div>
+
+            <p class="job-description">
+                @GetTruncatedDescription(JobPost.JobSummary)
+            </p>
+
+            @if (@JobPost.MinimumSalary > 0 && @JobPost.MaximumSalary > 0)
+            {
+                <div class="salary-range">
+                    <span class="salary-icon" aria-hidden="true">💰</span>
+                    <span class="visually-hidden">Salary: </span>
+                    <span class="salary-text">@JobPost.MinimumSalary.ToString("N0") -
+                        @JobPost.MaximumSalary.ToString("N0")</span>
+                </div>
+            }
+
+            <div class="job-tags">
+                @foreach (var skill in GetSkillTags(JobPost.RequiredSkills))
+                {
+                    <span class="skill-tag">@skill</span>
+                }
+            </div>
+        </div>
+
+        <div class="job-card-footer">
+            <div class="job-timing">
+                <span class="posted-date">Posted @GetRelativeTime(JobPost.PostedDate)</span>
+            </div>
+            <div class="job-cta" style="display: flex; flex-direction: column; gap: var(--space-2);">
+                <button class="btn btn-secondary btn-sm" style="background-color: var(--success-700); color: white; border-color: #22c55e;" @onclick:stopPropagation="true" @onclick="async () => await ViewJob(JobPost)">
+                    Apply External
+                    <span class="btn-arrow" aria-hidden="true">→</span>
+                </button>
+                <button class="btn btn-primary btn-sm" @onclick:stopPropagation="true" @onclick="async () => await ApplyForJob(JobPost)">
+                    Apply Now
+                </button>
+            </div>
+        </div>
+
+        @if (JobPost.IsFeatured)
+        {
+            <div class="featured-badge">
+                <span class="featured-text">Featured</span>
+            </div>
+        }
+
+        @if (JobPost.IsUrgent)
+        {
+            <div class="urgent-badge">
+                <span class="urgent-text">Urgent</span>
+            </div>
+        }
+    </a>
+</div>
+
+@code {
+    [Parameter] public JobPost JobPost { get; set; } = new JobPost();
+    [Parameter] public EventCallback<int> OnBookmarkToggle { get; set; }
+    [Parameter] public EventCallback<int> OnJobClick { get; set; }
+
+    private void NavigateToJob(int jobId)
+    {
+        Navigation.NavigateTo($"/jobs/{jobId}");
+    }
+
+    @* private async Task ToggleBookmark(int jobId)
+    {
+        JobPost.IsBookmarked = !JobPost.IsBookmarked;
+        await OnBookmarkToggle.InvokeAsync(jobId);
+    } *@
+
+    private string GetCompanyInitials(string? companyName)
+    {
+        if (string.IsNullOrEmpty(companyName)) return "?";
+
+        var words = companyName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (words.Length >= 2)
+        {
+            return $"{words[0][0]}{words[1][0]}".ToUpper();
+        }
+        return companyName.Length >= 2 ? companyName.Substring(0, 2).ToUpper() : companyName.ToUpper();
+    }
+
+    private string GetTruncatedDescription(string description)
+    {
+        if (string.IsNullOrEmpty(description)) return "No description available.";
+        return description.Length > 120 ? description.Substring(0, 120) + "..." : description;
+    }
+
+    private async Task ViewJob(JobPost job)
+    {
+        string applicationUrl = "";
+        
+        if (!string.IsNullOrEmpty(job.ExternalApplicationUrl))
+        {
+            applicationUrl = job.ExternalApplicationUrl;
+        }
+        else
+        {
+            // Generate mock URL
+            var companyName = job.Employer?.Name?.ToLower().Replace(" ", "") ?? "company";
+            applicationUrl = $"https://careers.{companyName}.com/apply/{job.Id}";
+        }
+        
+        await JSRuntime.InvokeVoidAsync("open", applicationUrl, "_blank");
+    }
+
+    private async Task ApplyForJob(JobPost job)
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        
+        if (!authState.User.Identity?.IsAuthenticated == true)
+        {
+            Navigation.NavigateTo("/authentication/login");
+            return;
+        }
+        
+        // Add application to Recent Applications - navigate to dashboard to handle this
+        Navigation.NavigateTo($"/apply/{job.Id}");
+    }
+
+    // This method retrieves the skill tags from a job description
+    private List<string> GetSkillTags(string description)
+    {
+        // Mock skill extraction - in real app, this would be more sophisticated
+        var commonSkills = new List<string> { "React", "JavaScript", "Python", "C#", "SQL", "AWS", "Docker", "Git" };
+        var foundSkills = new List<string>();
+
+        foreach (var skill in commonSkills)
+        {
+            if (description?.Contains(skill, StringComparison.OrdinalIgnoreCase) == true)
+            {
+                foundSkills.Add(skill);
+            }
+        }
+
+        return foundSkills.Take(3).ToList();
+    }
+
+    // This method retrieves the relative time for a posted date
+    private string GetRelativeTime(DateTime postedDate)
+    {
+        var timeSpan = DateTime.Now - postedDate;
+
+        if (timeSpan.Days > 7)
+            return $"{timeSpan.Days / 7} week{(timeSpan.Days / 7 > 1 ? "s" : "")} ago";
+        if (timeSpan.Days > 0)
+            return $"{timeSpan.Days} day{(timeSpan.Days > 1 ? "s" : "")} ago";
+        if (timeSpan.Hours > 0)
+            return $"{timeSpan.Hours} hour{(timeSpan.Hours > 1 ? "s" : "")} ago";
+
+        return "Recently posted";
+    }
+}

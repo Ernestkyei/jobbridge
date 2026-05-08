@@ -1,0 +1,203 @@
+@namespace JobBridge.Components.Common
+
+<div class="search-bar-container">
+    <form @onsubmit="PerformSearch" @onsubmit:preventDefault="true">
+        <div class="search-bar-wrapper">
+            <div class="search-input-group">
+                <label for="search-term-input" class="visually-hidden">Search for jobs, companies, or keywords</label>
+                <div class="search-icon">
+                    <span class="icon" aria-hidden="true">🔍</span>
+                </div>
+                <input type="text"
+                        id="search-term-input" class="search-input"
+                        placeholder="@Placeholder"
+                        @bind="SearchTerm"
+                        @bind:event="oninput"
+                        @onkeypress="HandleKeyPress"
+                        @onfocus="OnSearchFocus"
+                        @onblur="OnSearchBlur" />
+                
+                @if (!string.IsNullOrEmpty(SearchTerm))
+                {
+                    <button type="button" class="clear-button" @onclick="ClearSearch" aria-label="Clear search">
+                        <span class="clear-icon" aria-hidden="true">✕</span>
+                    </button>
+                }
+            </div>
+
+            <div class="location-input-group">
+                <label for="location-input" class="visually-hidden">Location</label>
+                <div class="location-icon">
+                    <span class="icon" aria-hidden="true">📍</span>
+                </div>
+                <input type="text"
+                    id="location-input" class="location-input"
+                    placeholder="Location"
+                    @bind="LocationTerm"
+                    @bind:event="oninput"
+                    @onkeypress="HandleKeyPress"
+                    @onfocus="OnLocationFocus"
+                    @onblur="OnLocationBlur" />
+            </div>
+
+            <button type="submit" class="search-button">
+                <span class="search-btn-icon" aria-hidden="true">🔍</span>
+                <span class="search-btn-text">Search</span>
+            </button>
+        </div>
+    </form>
+
+    <!-- Advanced Search Toggle -->
+    <div class="advanced-search-toggle">
+        <button class="toggle-btn" @onclick="ToggleAdvancedSearch" aria-label="@(ShowAdvancedSearch ? "Hide advanced filters" : "Show advanced filters")">
+            <span class="toggle-icon" aria-hidden="true">@(ShowAdvancedSearch ? "▲" : "▼")</span>
+            <span class="toggle-text">@(ShowAdvancedSearch ? "Hide" : "Show") Advanced Filters</span>
+        </button>
+    </div>
+
+    <!-- Quick Search Suggestions -->
+    @if (IsFocused && QuickSearches.Any())
+    {
+        <div class="quick-searches">
+            <h4 class="quick-searches-title">Popular Searches</h4>
+            <div class="quick-search-tags" role="listbox" aria-label="Popular search suggestions">
+                @foreach (var search in QuickSearches)
+                {
+                    <button class="quick-search-tag" @onclick="() => ApplyQuickSearch(search)">
+                        @search
+                    </button>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Recent Searches -->
+    @if (IsFocused && RecentSearches.Any())
+    {
+        <div class="recent-searches">
+            <h4 class="recent-searches-title">Recent Searches</h4>
+            <div class="recent-search-list">
+                @foreach (var search in RecentSearches.Take(5))
+                {
+                    <button class="recent-search-item" @onclick="() => ApplyRecentSearch(search)">
+                        <span class="recent-icon">🕒</span>
+                        <span class="recent-text">@search</span>
+                    </button>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Placeholder { get; set; } = "Search for jobs, companies, or keywords...";
+    [Parameter] public EventCallback<SearchModel> OnSearch { get; set; }
+    [Parameter] public EventCallback OnAdvancedToggle { get; set; }
+
+    private string SearchTerm { get; set; } = string.Empty;
+    private string LocationTerm { get; set; } = string.Empty;
+    private bool ShowAdvancedSearch { get; set; } = false;
+    private bool IsFocused { get; set; } = false;
+
+    // Updated with actual job titles from your database
+    private List<string> QuickSearches = new()
+    {
+        "Backend Developer", "Frontend Developer", "Marketing", "Remote", 
+        "TechNova", "GreenSolutions", "React", "Engineering"
+    };
+
+    private List<string> RecentSearches = new();
+
+
+    
+    private async Task PerformSearch()
+    {
+        Console.WriteLine($"PerformSearch CALLED: SearchTerm='{SearchTerm}', LocationTerm='{LocationTerm}'");
+        
+        var searchModel = new SearchModel
+        {
+            SearchTerm = SearchTerm,
+            Location = LocationTerm,
+            Timestamp = DateTime.Now
+        };
+
+        // Add to recent searches
+        if (!string.IsNullOrEmpty(SearchTerm) && !RecentSearches.Contains(SearchTerm))
+        {
+            RecentSearches.Insert(0, SearchTerm);
+            if (RecentSearches.Count > 10)
+            {
+                RecentSearches.RemoveAt(RecentSearches.Count - 1);
+            }
+        }
+
+        Console.WriteLine($"About to invoke OnSearch with: {searchModel.SearchTerm}");
+        await OnSearch.InvokeAsync(searchModel);
+        IsFocused = false;
+        Console.WriteLine($"PerformSearch COMPLETED");
+    }
+
+    private async Task HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await PerformSearch();
+        }
+    }
+
+    // This method toggles the advanced search panel
+    private async Task ToggleAdvancedSearch()
+    {
+        ShowAdvancedSearch = !ShowAdvancedSearch;
+        await OnAdvancedToggle.InvokeAsync();
+    }
+
+    // This method applies a quick search
+    private async Task ApplyQuickSearch(string searchTerm)
+    {
+        SearchTerm = searchTerm;
+        await PerformSearch();
+    }
+
+    private async Task ApplyRecentSearch(string searchTerm)
+    {
+        SearchTerm = searchTerm;
+        await PerformSearch();
+    }
+
+    private void OnSearchFocus()
+    {
+        IsFocused = true;
+    }
+
+    private void OnLocationFocus()
+    {
+        IsFocused = true;
+    }
+
+    private void OnSearchBlur()
+    {
+        // Delay to allow click events on suggestions
+        Task.Delay(200).ContinueWith(t => InvokeAsync(() => { IsFocused = false; StateHasChanged(); }));
+    }
+
+    private void OnLocationBlur()
+    {
+        Task.Delay(200).ContinueWith(t => InvokeAsync(() => { IsFocused = false; StateHasChanged(); }));
+    }
+
+    private async Task ClearSearch()
+    {
+        SearchTerm = string.Empty;
+        LocationTerm = string.Empty;
+        await PerformSearch();
+    }
+
+    // Mock model for UI development
+    public class SearchModel
+    {
+        public string SearchTerm { get; set; } = string.Empty;
+        public string Location { get; set; } = string.Empty;
+        public DateTime Timestamp { get; set; }
+    }
+}

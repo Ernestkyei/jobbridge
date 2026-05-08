@@ -1,0 +1,426 @@
+@page "/profile/jobseeker/{Id:int}"
+@page "/profile/jobseeker/{UserId}"
+@attribute [Authorize(Roles = "Employer,Admin")]
+@using JobBridge.Data
+@using JobBridge.Models
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@inject JobBridgeContext DbContext
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>My Profile - JobBridge</PageTitle>
+
+<div class="profile-container" role="main">
+    @if (hasAccess && jobSeeker != null)
+    {
+        @if (isAdmin)
+        {
+            <section class="profile-section" aria-label="Admin view of complete user registration details">
+                <h2>Complete User Registration Details (Admin View)</h2>
+                <div class="profile-details">
+                    <div class="detail-item">
+                        <strong>User ID:</strong>
+                        <span>@jobSeeker.User.Id</span>
+                    </div>
+                    <div class="detail-item">
+                        <strong>First Name:</strong>
+                        <span>@jobSeeker.User.FirstName</span>
+                    </div>
+                    <div class="detail-item">
+                        <strong>Last Name:</strong>
+                        <span>@jobSeeker.User.LastName</span>
+                    </div>
+                    <div class="detail-item">
+                        <strong>Email:</strong>
+                        <span>@jobSeeker.User.Email</span>
+                    </div>
+                    <div class="detail-item">
+                        <strong>Phone Number:</strong>
+                        <span>@(!string.IsNullOrEmpty(jobSeeker.User.Phone) ? jobSeeker.User.Phone : "Not provided")</span>
+                    </div>
+                    <div class="detail-item">
+                        <strong>Role:</strong>
+                        <span>@jobSeeker.User.Role</span>
+                    </div>
+                    <div class="detail-item">
+                        <strong>Email Confirmed:</strong>
+                        <span>@(jobSeeker.User.EmailConfirmed ? "Yes" : "No")</span>
+                    </div>
+                    <div class="detail-item">
+                        <strong>Account Created:</strong>
+                        <span>@jobSeeker.User.CreatedAt.ToString("MMM dd, yyyy 'at' hh:mm tt")</span>
+                    </div>
+                    <div class="detail-item">
+                        <strong>Last Updated:</strong>
+                        <span>@jobSeeker.User.UpdatedAt.ToString("MMM dd, yyyy 'at' hh:mm tt")</span>
+                    </div>
+                    <div class="detail-item">
+                        <strong>Resume URL:</strong>
+                        <span>@(!string.IsNullOrEmpty(jobSeeker.ResumeUrl) ? jobSeeker.ResumeUrl : "Not provided")</span>
+                    </div>
+                </div>
+            </section>
+        }
+        else
+        {
+            <section class="profile-section" aria-label="Applicant basic profile">
+                <h2>Applicant Basic Profile</h2>
+                <div class="profile-details">
+                    <div class="detail-item">
+                        <strong>First Name:</strong>
+                        <span>@jobSeeker.User.FirstName</span>
+                    </div>
+                    <div class="detail-item">
+                        <strong>Last Name:</strong>
+                        <span>@jobSeeker.User.LastName</span>
+                    </div>
+                    <div class="detail-item">
+                        <strong>Email:</strong>
+                        <span>@jobSeeker.User.Email</span>
+                    </div>
+                    <div class="detail-item">
+                        <strong>Phone Number:</strong>
+                        <span>@(!string.IsNullOrEmpty(jobSeeker.User.Phone) ? jobSeeker.User.Phone : "Not provided")</span>
+                    </div>
+                </div>
+            </section>
+        }
+    }
+    else if (!hasAccess)
+    {
+        <div class="access-denied" role="alert" aria-live="assertive">
+            <h2>Access Denied</h2>
+            <p>You can only view profiles of job seekers who have applied to your job postings.</p>
+        </div>
+    }
+    else
+    {
+        <div class="loading" aria-live="polite">
+            <p>Loading profile...</p>
+        </div>
+    }
+</div>
+
+
+<!-- Profile Styles -->
+<style>
+    .profile-container {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .profile-section {
+        background: white;
+        padding: 2rem;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 30px;
+    }
+
+    .profile-section h2 {
+        text-align: center;
+        margin-bottom: 2rem;
+        background: linear-gradient(90deg, #0ea5e9, #d946ef);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-size: 1.75rem;
+        font-weight: 600;
+    }
+
+    .profile-details {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .detail-item {
+        margin-bottom: 1rem;
+    }
+
+    .detail-item strong {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: #374151;
+        font-weight: 500;
+        font-size: 0.875rem;
+    }
+
+    .detail-item span {
+        display: block;
+        padding: 0.75rem;
+        background-color: #f9fafb;
+        border: 1px solid #d1d5db;
+        border-radius: 0.375rem;
+        color: #111827;
+        font-size: 1rem;
+    }
+
+    .profile-content {
+        display: flex;
+        flex-direction: column;
+        gap: 30px;
+    }
+
+    .profile-section {
+        background: white;
+        padding: 25px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .profile-section h3 {
+        margin: 0 0 20px 0;
+        color: #333;
+        border-bottom: 2px solid #f0f0f0;
+        padding-bottom: 10px;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 15px;
+    }
+
+    .info-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .info-item:last-child {
+        border-bottom: none;
+    }
+
+    .applications-list {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .application-card {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        background: #fafafa;
+    }
+
+    .application-details h4 {
+        margin: 0 0 5px 0;
+        color: #333;
+    }
+
+    .application-details p {
+        margin: 0 0 5px 0;
+        color: #666;
+    }
+
+    .application-details small {
+        color: #999;
+    }
+
+    .status-badge {
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        text-transform: capitalize;
+    }
+
+    .status-pending {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+
+    .status-approved {
+        background-color: #d4edda;
+        color: #155724;
+    }
+
+    .status-rejected {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+
+    .no-data {
+        text-align: center;
+        color: #666;
+        font-style: italic;
+        padding: 20px;
+    }
+
+    .loading {
+        text-align: center;
+        padding: 50px;
+    }
+
+    .access-denied {
+        text-align: center;
+        padding: 2rem;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin: 20px;
+    }
+
+    .access-denied h2 {
+        color: #912f38;
+        margin-bottom: 1rem;
+        font-size: 1.5rem;
+    }
+
+    .access-denied p {
+        color: #6b7280;
+        font-size: 1rem;
+    }
+
+    .loading {
+        text-align: center;
+        padding: 2rem;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .loading p {
+        color: #6b7280;
+        font-size: 1rem;
+        margin: 0;
+    }
+
+    .btn {
+        padding: 8px 16px;
+        border-radius: 5px;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 0.9rem;
+    }
+
+    .btn-outline-primary {
+        border: 1px solid #007bff;
+        color: #007bff;
+        background: transparent;
+    }
+
+    .btn-outline-primary:hover {
+        background: #007bff;
+        color: white;
+    }
+
+    .btn-sm {
+        padding: 5px 10px;
+        font-size: 0.8rem;
+    }
+</style>
+
+@code { // This is the code block for the job seeker profile
+    [Parameter] public int Id { get; set; }
+    [Parameter] public string? UserId { get; set; }
+    
+    private JobSeeker? jobSeeker;
+    private bool hasAccess = false;
+    private bool isAdmin = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CheckAccessAndLoadProfile();
+    }
+
+    // This is the access check and profile loading handler
+    private async Task CheckAccessAndLoadProfile()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var currentUserId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        
+        if (string.IsNullOrEmpty(currentUserId))
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+
+        // Determine the JobSeeker ID to look up
+        int jobSeekerId;
+        if (!string.IsNullOrEmpty(UserId))
+        {
+            // Route with UserId - find JobSeeker by User ID
+            var jobSeekerByUserId = await DbContext.JobSeekers
+                .FirstOrDefaultAsync(js => js.UserId == UserId);
+            if (jobSeekerByUserId == null)
+            {
+                hasAccess = false;
+                return;
+            }
+            jobSeekerId = jobSeekerByUserId.Id;
+        }
+        else
+        {
+            // Route with Id - use directly
+            jobSeekerId = Id;
+        }
+
+        // Check if current user is Admin
+        isAdmin = authState.User.IsInRole("Admin");
+        
+        if (isAdmin)
+        {
+            // Admin has access to all profiles
+            hasAccess = true;
+        }
+        else
+        {
+            // Get current employer
+            var employer = await DbContext.Employers
+                .FirstOrDefaultAsync(e => e.UserId == currentUserId);
+                
+            if (employer == null)
+            {
+                hasAccess = false;
+                return;
+            }
+
+            // Check if job seeker has applied to any of this employer's jobs
+            hasAccess = await DbContext.Applications
+                .AnyAsync(a => a.JobSeekerId == jobSeekerId && a.JobPost.EmployerId == employer.Id);
+        }
+
+        if (hasAccess)
+        {
+            jobSeeker = await DbContext.JobSeekers
+                .Include(js => js.User)
+                .FirstOrDefaultAsync(js => js.Id == jobSeekerId);
+
+            // Track profile view (only for employers, not admins)
+            if (!isAdmin)
+            {
+                var employer = await DbContext.Employers
+                    .FirstOrDefaultAsync(e => e.UserId == currentUserId);
+                    
+                if (employer != null)
+                {
+                    var existingView = await DbContext.ProfileViews
+                        .FirstOrDefaultAsync(pv => pv.JobSeekerId == jobSeekerId && pv.EmployerId == employer.Id);
+                        
+                    if (existingView == null)
+                    {
+                        var profileView = new ProfileView
+                        {
+                            JobSeekerId = jobSeekerId,
+                            EmployerId = employer.Id,
+                            ViewedAt = DateTime.UtcNow
+                        };
+                        DbContext.ProfileViews.Add(profileView);
+                        await DbContext.SaveChangesAsync();
+                    }
+                }
+            }
+        }
+    }
+}

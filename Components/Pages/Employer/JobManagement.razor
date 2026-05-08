@@ -1,0 +1,255 @@
+@page "/employer/{id:int}/jobs"
+@page "/employer/{id:int}/jobs/management"
+@using JobBridge.Components.Common
+@using JobBridge.Data
+@using JobBridge.Models
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.Authorization
+@inject JobBridgeContext DbContext
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>Job Management - JobBridge</PageTitle>
+
+<div class="job-management-container">
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger">
+            @errorMessage
+        </div>
+    }
+    
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="header-content">
+            <h1 class="page-title">@employer?.Name - Job Management</h1>
+            <p class="page-subtitle">Manage your job postings and track their performance</p>
+        </div>
+
+        <div class="header-actions">
+            <a href="/dashboard/employer/@Id" class="btn btn-secondary">
+                Employer Dashboard
+            </a>
+            <a href="/employer/@Id/jobs/create" class="btn btn-primary">
+                + Create New Job
+            </a>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="stats-overview">
+        <div class="stat-card">
+            <div class="stat-icon" aria-hidden="true">📝</div>
+            <div class="stat-content">
+                <div class="stat-number">@jobPosts.Count(j => j.IsActive)</div>
+                <div class="stat-label">Active Jobs</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" aria-hidden="true">👁️</div>
+            <div class="stat-content">
+                <div class="stat-number">@totalViews</div>
+                <div class="stat-label">Total Views</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" aria-hidden="true">📄</div>
+            <div class="stat-content">
+                <div class="stat-number">@totalApplications</div>
+                <div class="stat-label">Applications</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" aria-hidden="true">📈</div>
+            <div class="stat-content">
+                <div class="stat-number">@applyRate.ToString("P0")</div>
+                <div class="stat-label">Avg. Apply Rate</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="management-controls">
+        <div class="search-filters">
+            <div class="search-input-wrapper">
+                <label for="searchInput" class="visually-hidden">Search for jobs</label>
+                <input type="text" id="searchInput" class="search-input" placeholder="Search your jobs..." />
+                <span class="search-icon" aria-hidden="true">🔍</span>
+            </div>
+
+            <div class="filter-dropdown">
+                <label for="jobStatusFilter" class="visually-hidden">Filter by Job Status</label>
+                <select id="jobStatusFilter" class="filter-select">
+                    <option value="all">All Jobs</option>
+                    <option value="active">Active</option>
+                    <option value="paused">Paused</option>
+                    <option value="expired">Expired</option>
+                    <option value="draft">Draft</option>
+                </select>
+            </div>
+
+            <div class="filter-dropdown">
+                <label for="departmentFilter" class="visually-hidden">Filter by Department</label>
+                <select id="departmentFilter" class="filter-select">
+                    <option value="all">All Departments</option>
+                    <option value="engineering">Engineering</option>
+                    <option value="product">Product</option>
+                    <option value="design">Design</option>
+                    <option value="marketing">Marketing</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="view-controls">
+            <div class="sort-dropdown">
+                <label for="sort" class="visually-hidden">Sort Jobs</label>
+                <select id="sort" class="sort-select">
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="most-views">Most Views</option>
+                    <option value="most-applications">Most Applications</option>
+                </select>
+            </div>
+
+            <div class="view-toggle">
+                <button class="view-btn active" aria-pressed="true">Grid</button>
+                <button class="view-btn" aria-pressed="false">List</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Jobs Grid -->
+    <div class="jobs-grid">
+        @foreach (var jobPost in jobPosts)
+        {
+            <div class="job-management-card">
+                <div class="job-status-indicator active"></div>
+
+                <div class="job-card-header">
+                    <div class="job-basic-info">
+                        <h3 class="job-card-title">@jobPost.JobTitle</h3>
+                        <p class="job-card-department">@jobPost.Department</p>
+                        <div class="job-card-meta">
+                            <span class="meta-item">@jobPost.EmploymentType</span>
+                            <span class="meta-separator">•</span>
+                            <span class="meta-item">@jobPost.Location</span>
+                            <span class="meta-separator">•</span>
+                            <span class="meta-item">Posted on @jobPost.PostedDate.ToString("MMMM dd, yyyy")</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="job-card-footer">
+                    <div class="status-badges">
+                        @if (jobPost.IsUrgent)
+                        {
+                            <span class="status-badge">Urgent</span>
+                        }
+                        @if (jobPost.IsFeatured)
+                        {
+                            <span class="feature-badge">Featured</span>
+                        }
+                    </div>
+
+                    <div class="quick-actions">
+                        <button style="background-color: var(--success-700) ;" class="btn btn-sm btn-toggle @(jobPost.IsActive ? "active" : "")"
+                            @onclick="() => ToggleJobStatus(jobPost.Id)">
+                            @(jobPost.IsActive ? "Active" : "Inactive")
+                        </button>
+                        <button class="btn btn-primary btn-sm" @onclick="() => NavigateToEdit(jobPost.Id)">Edit</button>
+                        <button class="btn btn-danger btn-sm" @onclick="() => HandleDelete(jobPost.Id)">Delete</button>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Empty State (hidden when there are jobs) -->
+    @if (jobPosts.Count == 0)
+    {
+        <div class="empty-state">
+            <div class="empty-icon" aria-hidden="true">📝</div>
+            <h3 class="empty-title">No Job Postings Yet</h3>
+            <p class="empty-description">Create your first job posting to start attracting top talent</p>
+            <a href="/employer/@Id/jobs/create" class="btn btn-primary">Create Your First Job</a>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private Employers? employer = new Employers();
+    private List<JobPost> jobPosts = new();
+    private string? errorMessage = null;
+    private int totalViews = 0;
+    private int totalApplications = 0;
+    private decimal applyRate = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            employer = await DbContext.Employers
+                .FirstOrDefaultAsync(e => e.Id == Id);
+
+            if (employer == null)
+            {
+                errorMessage = $"Employer with ID {Id} not found.";
+                return;
+            }
+
+            jobPosts = await DbContext.JobPosts
+                .Where(j => j.EmployerId == Id)
+                .OrderByDescending(j => j.CreatedAt)
+                .ToListAsync();
+                
+            // Calculate real-time statistics
+            var jobPostIds = jobPosts.Select(j => j.Id).ToList();
+            
+            totalViews = await DbContext.JobViews
+                .Where(jv => jobPostIds.Contains(jv.JobPostId))
+                .CountAsync();
+                
+            totalApplications = await DbContext.Applications
+                .Where(a => jobPostIds.Contains(a.JobPostId))
+                .CountAsync();
+                
+            applyRate = totalViews > 0 ? (decimal)totalApplications / totalViews : 0;
+                
+            Console.WriteLine($"Loaded employer: {employer.Name}, Job posts: {jobPosts.Count}");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to load job listings: {ex.Message}";
+        }
+    }
+
+    private async Task ToggleJobStatus(int jobId)
+    {
+        var job = jobPosts?.FirstOrDefault(j => j.Id == jobId);
+        if (job != null)
+        {
+            job.IsActive = !job.IsActive;
+            // Update the job status in the database
+            DbContext.JobPosts.Update(job);
+            await DbContext.SaveChangesAsync();
+            StateHasChanged();
+        }
+    }
+
+    private void NavigateToEdit(int jobId)
+    {
+        NavigationManager.NavigateTo($"/employer/{Id}/jobs/edit/{jobId}");
+    }
+
+    private async Task HandleDelete(int jobPostId)
+    {
+        var jobToRemove = jobPosts.FirstOrDefault(j => j.Id == jobPostId);
+        if (jobToRemove != null)
+        {
+            jobPosts.Remove(jobToRemove);
+            DbContext.JobPosts.Remove(jobToRemove);
+            await DbContext.SaveChangesAsync();
+            StateHasChanged();
+        }
+    }
+}

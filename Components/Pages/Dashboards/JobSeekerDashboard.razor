@@ -1,0 +1,439 @@
+@page "/dashboard/jobseeker/{id:int}"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@using JobBridge.Data
+@using JobBridge.Models
+@using JobBridge.Components.Common
+@using Microsoft.EntityFrameworkCore
+@inject JobBridgeContext DbContext
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Job Seeker Dashboard - JobBridge</PageTitle>
+
+<div class="dashboard-container">
+    <!-- Dashboard Header -->
+    <div class="dashboard-header">
+        <div class="hero-section">
+            <div class="hero-content">
+                <AuthorizeView>
+                    <Authorized>
+                        <h1 class="hero-title">Welcome back, @context.User.FindFirst(ClaimTypes.GivenName)?.Value!</h1>
+                        <p class="hero-subtitle">Ready to find your dream job? Let's explore new opportunities together!</p>
+                    </Authorized>
+                    <NotAuthorized>
+                        <h1 class="hero-title">Welcome to JobBridge!</h1>
+                        <p class="hero-subtitle">Find your next opportunity and track your progress</p>
+                    </NotAuthorized>
+                </AuthorizeView>
+                <div class="hero-buttons">
+                    <a href="/job-listings" class="btn btn-primary" aria-label="Browse available jobs">Browse Jobs</a>
+                    <a href="/profile" class="btn btn-secondary" aria-label="Update your profile">Update Profile</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Stats -->
+    <div class="dashboard-stats" aria-live="polite">
+        <div class="grid grid-cols-4">
+            <JobBridge.Components.Common.StatisticsCard Icon="📊" Value="@totalApplications.ToString()" Label="Total Applications" />
+            <JobBridge.Components.Common.StatisticsCard Icon="💾" Value="@savedJobs.ToString()" Label="Saved Jobs" />
+            <JobBridge.Components.Common.StatisticsCard Icon="👀" Value="@profileViews.ToString()" Label="Profile Views" />
+            <JobBridge.Components.Common.StatisticsCard Icon="🎯" Value="@activeSearches.ToString()" Label="Active Searches" />
+        </div>
+    </div>
+
+    <!-- Recent Applications -->
+    <div class="dashboard-content">
+        <div class="grid grid-cols-2">
+            <div class="section-container">
+                <h3>Recent Applications</h3>
+                @if (recentApplications?.Any() == true)
+                {
+                    <div class="application-list" aria-live="polite">
+                        @foreach (var application in recentApplications)
+                        {
+                            <a href="/jobs/@application.JobPost.Id" class="application-item" aria-label="View details for application to @application.JobPost.JobTitle">
+                                <div class="application-info">
+                                    <h4>@application.JobPost.JobTitle</h4>
+                                    <p>@application.JobPost.Employer.Name</p>
+                                    <span class="application-date">Applied @application.AppliedDate.ToString("MMM dd")</span>
+                                </div>
+                                <div class="application-status">
+                                    <span class="status-badge status-@application.Status.ToString().ToLower()" aria-label="Application status: @application.Status">@application.Status</span>
+                                </div>
+                            </a>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="empty-state" aria-live="polite">
+                        <p>No applications yet. <a href="/job-listings" aria-label="Start browsing jobs">Start browsing jobs</a></p>
+                    </div>
+                }
+            </div>
+
+            <!-- Saved Jobs -->
+            <div class="section-container">
+                <h3>Saved Jobs</h3>
+                @if (savedJobsList?.Any() == true)
+                {
+                    <div class="saved-jobs-list" aria-live="polite">
+                        @foreach (var job in savedJobsList)
+                        {
+                            <div class="job-item" style="display: flex; flex-direction: column; gap: var(--space-3);">
+                                <a href="/jobs/@job.Id" class="job-info" aria-label="View job details for @job.JobTitle">
+                                    <h4>@job.JobTitle</h4>
+                                    <p>@job.Employer.Name</p>
+                                    <span class="job-location" aria-hidden="true">📍 @job.Location</span>
+                                </a>
+                                <div class="job-actions">
+                                    <button class="btn btn-secondary btn-sm" style="background-color: var(--success-700); color: white; border-color: #22c55e;" aria-label="View and apply externally to @job.JobTitle" @onclick="() => ViewJob(job)">Apply External</button>
+                                    <button class="btn btn-primary btn-sm" aria-label="Apply now to @job.JobTitle" @onclick="() => ApplyToJob(job.Id)">Apply Now</button>
+                                    <button class="btn btn-danger btn-sm" aria-label="Remove bookmark for @job.JobTitle" @onclick="() => RemoveBookmark(job.Id)">Remove</button>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="empty-state" aria-live="polite">
+                        <p>No saved jobs yet. <a href="/job-listings" aria-label="Browse jobs to save">Browse jobs to save</a></p>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Bottom Row -->
+        <div class="grid grid-cols-2" style="margin-top: 30px;">
+            <!-- Active Searches -->
+            <div class="section-container">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+                    <h3>Active Searches</h3>
+                    <button class="btn btn-secondary btn-sm" aria-label="Create active search" @onclick="CreateActiveSearch">Create Active Search</button>
+                </div>
+                @if (activeSearchesList?.Any() == true)
+                {
+                    <div class="searches-list" aria-live="polite">
+                        @foreach (var search in activeSearchesList)
+                        {
+                            <div class="search-item">
+                                <div class="search-info">
+                                    <h4>@search.SearchName</h4>
+                                    <div class="search-criteria">
+                                        @if (!string.IsNullOrEmpty(search.JobTitle))
+                                        {
+                                            <span class="criteria-tag" aria-hidden="true">📋 @search.JobTitle</span>
+                                        }
+                                        @if (!string.IsNullOrEmpty(search.Location))
+                                        {
+                                            <span class="criteria-tag" aria-hidden="true">📍 @search.Location</span>
+                                        }
+                                    </div>
+                                    <span class="search-date">Created @search.CreatedAt.ToString("MMM dd")</span>
+                                </div>
+                                <div class="search-actions" style="display: flex; gap: var(--space-2);">
+                                    <button class="btn btn-primary btn-sm" style="flex: 1;" aria-label="Run search @search.SearchName" @onclick="() => RunSearch(search)">Run</button>
+                                    <button class="btn btn-danger btn-sm" style="flex: 1;" aria-label="Remove active search @search.SearchName" @onclick="() => RemoveActiveSearch(search.Id)">Remove</button>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="empty-state" aria-live="polite">
+                        <p>No active searches. <a href="/saved-searches" aria-label="Create your first search">Create your first search</a></p>
+                    </div>
+                }
+            </div>
+
+            <!-- Profile Views -->
+            <div class="section-container">
+                <h3>Who Viewed Your Profile</h3>
+                @if (profileViewsList?.Any() == true)
+                {
+                    <div class="profile-views-list" aria-live="polite">
+                        @foreach (var view in profileViewsList)
+                        {
+                            <div class="view-item">
+                                <div class="view-info">
+                                    <h4>@view.Employer.Name</h4>
+                                    <p>@view.Employer.Industry</p>
+                                    <span class="view-date">Viewed @view.ViewedAt.ToString("MMM dd")</span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="empty-state" aria-live="polite">
+                        <p>No profile views yet.</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div aria-live="polite" class="sr-only">@applicationMessage</div>
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private JobSeeker? jobSeeker;
+    private int totalApplications = 0;
+    private int savedJobs = 0;
+    private int profileViews = 0; // Placeholder
+    private int activeSearches = 0; // Placeholder
+    private string applicationMessage = "";
+
+    private List<Application>? recentApplications;
+    private List<JobPost>? savedJobsList;
+    private List<ProfileView>? profileViewsList;
+    private List<SavedSearch>? activeSearchesList;    
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Get current user's jobseeker ID and redirect if necessary
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        
+        if (!string.IsNullOrEmpty(userId))
+        {
+            var userJobSeeker = await DbContext.JobSeekers
+                .FirstOrDefaultAsync(js => js.UserId == userId);
+                
+            if (userJobSeeker == null)
+            {
+                // Create JobSeeker record if it doesn't exist
+                userJobSeeker = new JobSeeker
+                {
+                    UserId = userId,
+                    ResumeUrl = "",
+                    RememberMe = false
+                };
+                DbContext.JobSeekers.Add(userJobSeeker);
+                await DbContext.SaveChangesAsync();
+                Console.WriteLine($"Created new JobSeeker with ID: {userJobSeeker.Id}");
+            }
+                
+            Console.WriteLine($"JobSeeker ID: {userJobSeeker.Id}, Current URL ID: {Id}");
+                
+            if (userJobSeeker.Id != Id)
+            {
+                Console.WriteLine($"Redirecting to /dashboard/jobseeker/{userJobSeeker.Id}");
+                // Redirect to correct jobseeker ID
+                Navigation.NavigateTo($"/dashboard/jobseeker/{userJobSeeker.Id}");
+                return;
+            }
+        }
+        
+        await LoadDashboardData();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Force a second data load after first render to ensure fresh data
+            await LoadDashboardData();
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadDashboardData()
+    {
+        // Load JobSeeker with related data
+        jobSeeker = await DbContext.JobSeekers
+            .Include(js => js.User)
+            .Include(js => js.Applications)
+                .ThenInclude(a => a.JobPost)
+                    .ThenInclude(jp => jp.Employer)
+            .Include(js => js.Bookmarks)
+                .ThenInclude(b => b.JobPost)
+                    .ThenInclude(jp => jp.Employer)
+            .FirstOrDefaultAsync(js => js.Id == Id);
+
+        if (jobSeeker == null)
+        {
+            Console.WriteLine($"JobSeeker with ID {Id} not found");
+            return;
+        }
+
+        // Stats
+        totalApplications = jobSeeker.Applications.Count;
+        savedJobs = jobSeeker.Bookmarks.Count;
+        profileViews = await DbContext.ProfileViews.CountAsync(pv => pv.JobSeekerId == jobSeeker.Id);
+        activeSearches = await DbContext.SavedSearches.CountAsync(ss => ss.JobSeekerId == jobSeeker.Id && ss.IsActive);
+        
+        Console.WriteLine($"Dashboard Data - JobSeeker ID: {jobSeeker.Id}, Applications: {totalApplications}, Bookmarks: {savedJobs}, Profile Views: {profileViews}");
+
+        // Recent applications (last 5)
+        recentApplications = jobSeeker.Applications
+            .OrderByDescending(a => a.AppliedDate)
+            .Take(5)
+            .ToList();
+
+        // Saved jobs (from bookmarks)
+        savedJobsList = jobSeeker.Bookmarks
+            .Select(b => b.JobPost)
+            .OrderByDescending(jp => jp.PostedDate)
+            .Take(5)
+            .ToList();
+
+        // Profile views (recent 5)
+        profileViewsList = await DbContext.ProfileViews
+            .Where(pv => pv.JobSeekerId == jobSeeker.Id)
+            .Include(pv => pv.Employer)
+            .OrderByDescending(pv => pv.ViewedAt)
+            .Take(5)
+            .ToListAsync();
+
+        // Active searches (recent 5)
+        activeSearchesList = await DbContext.SavedSearches
+            .Where(ss => ss.JobSeekerId == jobSeeker.Id && ss.IsActive)
+            .OrderByDescending(ss => ss.CreatedAt)
+            .Take(5)
+            .ToListAsync();
+    }
+
+    private void NavigateToJob(int jobId)
+    {
+        Navigation.NavigateTo($"/jobs/{jobId}");
+    }
+
+    // This is the remove bookmark handler
+    private async Task RemoveBookmark(int jobId)
+    {
+        if (jobSeeker != null)
+        {
+            var bookmark = await DbContext.Bookmarks
+                .FirstOrDefaultAsync(b => b.JobSeekerId == jobSeeker.Id && b.JobPostId == jobId);
+
+            if (bookmark != null)
+            {
+                DbContext.Bookmarks.Remove(bookmark);
+                await DbContext.SaveChangesAsync();
+                await LoadDashboardData();
+            }
+        }
+    }
+    // This is the view job handler
+    private async Task ViewJob(JobPost job)
+    {
+        string applicationUrl = "";
+        
+        if (!string.IsNullOrEmpty(job.ExternalApplicationUrl))
+        {
+            applicationUrl = job.ExternalApplicationUrl;
+        }
+        else
+        {
+            var companyName = job.Employer?.Name?.ToLower()?.Replace(" ", "") ?? "company";
+            applicationUrl = $"https://careers.{companyName}.com/apply/{job.Id}";
+        }
+        
+        await JSRuntime.InvokeVoidAsync("open", applicationUrl, "_blank");
+    }
+
+    // This is the apply to job handler
+    private async Task ApplyToJob(int jobId)
+    {
+        if (jobSeeker != null)
+        {
+            bool alreadyApplied = await DbContext.Applications
+                .AnyAsync(a => a.JobSeekerId == jobSeeker.Id && a.JobPostId == jobId);
+
+            if (alreadyApplied)
+            {
+                applicationMessage = "You have already applied to this job.";
+                return;
+            }
+
+            var newApplication = new Application
+            {
+                JobSeekerId = jobSeeker.Id,
+                JobPostId = jobId,
+                Status = ApplicationStatus.Pending,
+                AppliedDate = DateTime.UtcNow
+            };
+
+            DbContext.Applications.Add(newApplication);
+            await DbContext.SaveChangesAsync();
+            await LoadDashboardData();
+        }
+    }
+    // This is the save job handler
+    private async Task SaveJob(int jobId)
+    {
+        if (jobSeeker != null)
+        {
+            // Check if already bookmarked
+            bool alreadyBookmarked = await DbContext.Bookmarks
+                .AnyAsync(b => b.JobSeekerId == jobSeeker.Id && b.JobPostId == jobId);
+
+            if (!alreadyBookmarked)
+            {
+                var bookmark = new Bookmark
+                {
+                    JobSeekerId = jobSeeker.Id,
+                    JobPostId = jobId
+                };
+
+                DbContext.Bookmarks.Add(bookmark);
+                await DbContext.SaveChangesAsync();
+                await LoadDashboardData();
+            }
+        }
+    }
+
+    private void RunSearch(SavedSearch search)
+    {
+        var queryParams = new List<string>();
+        
+        if (!string.IsNullOrEmpty(search.JobTitle))
+            queryParams.Add($"title={Uri.EscapeDataString(search.JobTitle)}");
+        if (!string.IsNullOrEmpty(search.Location))
+            queryParams.Add($"location={Uri.EscapeDataString(search.Location)}");
+        if (!string.IsNullOrEmpty(search.EmploymentType))
+            queryParams.Add($"type={Uri.EscapeDataString(search.EmploymentType)}");
+        if (search.MinSalary.HasValue)
+            queryParams.Add($"minSalary={search.MinSalary}");
+        if (search.MaxSalary.HasValue)
+            queryParams.Add($"maxSalary={search.MaxSalary}");
+
+        var queryString = queryParams.Any() ? "?" + string.Join("&", queryParams) : "";
+        Navigation.NavigateTo($"/job-listings{queryString}");
+    }
+    
+    private async Task RemoveActiveSearch(int searchId)
+    {
+        try
+        {
+            var search = await DbContext.SavedSearches.FindAsync(searchId);
+            if (search != null && search.JobSeekerId == jobSeeker?.Id)
+            {
+                DbContext.SavedSearches.Remove(search);
+                await DbContext.SaveChangesAsync();
+                await LoadDashboardData();
+            }
+        }
+        catch (Exception ex)
+        {
+            // Handle error silently or show message
+            Console.WriteLine($"Error removing search: {ex.Message}");
+        }
+    }
+    
+    private void CreateActiveSearch()
+    {
+        // Navigate to the saved searches page with the form
+        Navigation.NavigateTo("/saved-searches");
+    }
+}

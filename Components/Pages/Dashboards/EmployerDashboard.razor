@@ -1,0 +1,339 @@
+@page "/dashboard/employer/{id:int}"
+@using JobBridge.Data
+@using JobBridge.Models
+@using Microsoft.EntityFrameworkCore
+@inject JobBridgeContext DbContext
+@inject NavigationManager NavigationManager
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>Employer Dashboard - JobBridge</PageTitle>
+
+<div class="dashboard-container">
+    <!-- Dashboard Header -->
+    <div class="dashboard-header">
+        <div class="hero-section">
+            <div class="hero-content">
+                <h1 class="hero-title">Welcome, @(employer?.Name ?? "JobBridge User")!</h1>
+                <p class="hero-subtitle">Ready to find top talent? Manage your job postings and connect with qualified candidates!</p>
+                <div class="hero-buttons">
+                    <a href="/employer/@Id/jobs/create" class="btn btn-primary">Post New Job</a>
+                    <a href="/employer/@Id/jobs" class="btn btn-toggle active" style="background-color: var(--success-700) ;">Manage Jobs</a>
+                    <a href="/employer/profile" class="btn btn-secondary">Company Profile</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Stats -->
+    <div class="dashboard-stats">
+        <div class="grid grid-cols-4">
+            <StatisticsCard Icon="📝" Value="@activeJobs.ToString()" Label="Active Jobs" />
+            <StatisticsCard Icon="👥" Value="@totalApplicants.ToString()" Label="Total Applicants" />
+            <StatisticsCard Icon="👀" Value="@jobViews.ToString()" Label="Job Views" />
+            <StatisticsCard Icon="📊" Value="@responseRate.ToString("P0")" Label="Response Rate" />
+        </div>
+    </div>
+
+    <!-- Job Management Section -->
+    <div class="dashboard-content">
+        <div class="grid grid-cols-2">
+            <!-- Recent Job Postings -->
+            <div class="section-container">
+                <div class="section-header">
+                    <h3>Recent Job Postings</h3>
+                    <a href="/employer/@Id/jobs" class="btn btn-sm btn-secondary">View All</a>
+                </div>
+                @if (recentJobs?.Any() == true)
+                {
+                    <div class="jobs-list">
+                        @foreach (var job in recentJobs.Take(5))
+                        {
+                            <div class="job-item">
+                                <div class="job-info">
+                                    <h4>@job.JobTitle</h4>
+                                    <p>@job.Department • @job.Location</p>
+                                    <span class="job-date">Posted @job.PostedDate.ToString("MMM dd")</span>
+                                </div>
+                                <div class="job-stats">
+                                    <span class="stat-item">👥 @job.NumberOfApplicants</span>
+                                </div>
+                                <div class="job-actions">
+                                    <button class="btn btn-sm btn-toggle @(job.IsActive ? "active" : "")"
+                                        @onclick="() => ToggleJobStatus(job.Id)">
+                                        @(job.IsActive ? "Active" : "Inactive")
+                                    </button>
+                                    <button class="btn btn-sm btn-primary" @onclick="() => EditJob(job.Id)">Edit</button>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="empty-state">
+                        <p>No job postings yet. <a href="/employer/@Id/jobs/create">Create your first job posting</a></p>
+                    </div>
+                }
+            </div>
+
+            <!-- Recent Applications -->
+            <div class="section-container">
+                <div class="section-header">
+                    <h3>Recent Applications</h3>
+                    <a href="/employer/applications" class="btn btn-sm btn-secondary">View All</a>
+                </div>
+                @if (recentApplications?.Any() == true)
+                {
+                    <div class="applications-list">
+                        @foreach (var application in recentApplications.Take(5))
+                        {
+                            <div class="application-item">
+                                <div class="applicant-info">
+                                    <h4>@application.ApplicantName</h4>
+                                    <p>Applied for: @application.JobTitle</p>
+                                    <span class="application-date">@application.AppliedDate.ToString("MMM dd")</span>
+                                </div>
+                                <div class="application-actions">
+                                    <button class="btn btn-sm btn-primary" @onclick="() => ViewApplication(application.Id)">
+                                        View Profile
+                                    </button>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="empty-state">
+                        <p>No recent applications.</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Analytics -->
+    <div class="analytics-section">
+        <div class="section-container">
+            <h3>Performance Analytics</h3>
+            <div class="analytics-grid">
+                <div class="analytics-card">
+                    <h4>Top Performing Jobs</h4>
+                    @if (topPerformingJobs?.Any() == true)
+                    {
+                        <div class="performance-list">
+                            @foreach (var job in topPerformingJobs)
+                            {
+                                <div class="performance-item">
+                                    <span class="job-title">@job.JobTitle</span>
+                                    <span class="performance-metric">@job.NumberOfApplicants applicants</span>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+
+                <div class="analytics-card">
+                    <h4>Application Trends</h4>
+                    <div class="trend-stats">
+                        <div class="trend-item">
+                            <span class="trend-label">This Week</span>
+                            <span class="trend-value">+@weeklyApplications</span>
+                        </div>
+                        <div class="trend-item">
+                            <span class="trend-label">This Month</span>
+                            <span class="trend-value">+@monthlyApplications</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code { // This is the code block for the employer dashboard
+    [Parameter] public int Id { get; set; }
+    private Employers? employer = new Employers();
+    private int activeJobs = 0;
+    private int totalApplicants = 0;
+    private int jobViews = 0;
+    private decimal responseRate = 0;
+    private int weeklyApplications = 0;
+    private int monthlyApplications = 0;
+    private List<JobPost> jobPosts = new List<JobPost>();
+
+    private List<JobPost>? recentJobs;
+    private List<EmployerApplicationModel>? recentApplications;
+    private List<JobPost>? topPerformingJobs;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Get current user's employer ID and redirect if necessary
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        
+        if (!string.IsNullOrEmpty(userId))
+        {
+            var userEmployer = await DbContext.Employers
+                .FirstOrDefaultAsync(e => e.UserId == userId);
+                
+            if (userEmployer != null && userEmployer.Id != Id)
+            {
+                // Redirect to correct employer ID
+                NavigationManager.NavigateTo($"/dashboard/employer/{userEmployer.Id}", true);
+                return;
+            }
+        }
+        
+        await LoadDashboardData();
+    }
+
+    private async Task LoadDashboardData()
+    {
+        try
+        {
+            // Load employer and their job posts directly
+            employer = await DbContext.Employers
+                .Include(e => e.User)
+                .FirstOrDefaultAsync(e => e.Id == Id);
+
+            if (employer == null)
+            {
+                Console.WriteLine($"Employer with ID {Id} not found");
+                NavigationManager.NavigateTo("/dashboard");
+                return;
+            }
+
+            // Load job posts for this employer
+            jobPosts = await DbContext.JobPosts
+                .Where(j => j.EmployerId == Id)
+                .OrderByDescending(j => j.CreatedAt)
+                .ToListAsync();
+                
+            Console.WriteLine($"Dashboard - Loaded {jobPosts.Count} job posts for employer {Id}");
+
+            // Calculate actual applicant counts from Applications table
+            var jobPostIds = jobPosts.Select(j => j.Id).ToList();
+            var applicationsCount = await DbContext.Applications
+                .Where(a => jobPostIds.Contains(a.JobPostId))
+                .CountAsync();
+                
+            // Calculate real job views from JobViews table
+            var realJobViews = await DbContext.JobViews
+                .Where(jv => jobPostIds.Contains(jv.JobPostId))
+                .CountAsync();
+
+            // Calculate stats from loaded data
+            activeJobs = jobPosts.Count(j => j.IsActive);
+            totalApplicants = applicationsCount;
+            jobViews = realJobViews;
+            responseRate = jobViews > 0 ? (decimal)totalApplicants / jobViews : 0;
+            
+            Console.WriteLine($"Dashboard - Stats: Active={activeJobs}, Applicants={totalApplicants}, Views={jobViews}");
+            
+
+
+            // Recent jobs
+            recentJobs = jobPosts.Take(5).ToList();
+
+
+            // Load applications
+            var applications = await DbContext.Applications
+                .Include(a => a.JobPost)
+                .Include(a => a.JobSeeker)
+                    .ThenInclude(js => js.User)
+                .Where(a => jobPosts.Select(j => j.Id).Contains(a.JobPostId))
+                .OrderByDescending(a => a.AppliedDate)
+                .Take(5)
+                .ToListAsync();
+
+            recentApplications = applications.Select(a => new EmployerApplicationModel
+            {
+                Id = a.Id,
+                JobSeekerId = a.JobSeeker.Id,
+                ApplicantName = $"{a.JobSeeker.User.FirstName} {a.JobSeeker.User.LastName}",
+                JobTitle = a.JobPost.JobTitle,
+                AppliedDate = a.AppliedDate
+            }).ToList();
+
+            // Calculate trends
+            var weekAgo = DateTime.UtcNow.AddDays(-7);
+            var monthAgo = DateTime.UtcNow.AddDays(-30);
+            
+            weeklyApplications = applications.Count(a => a.AppliedDate >= weekAgo);
+            monthlyApplications = applications.Count(a => a.AppliedDate >= monthAgo);
+
+            // Top performing jobs
+            topPerformingJobs = jobPosts.OrderByDescending(j => j.NumberOfApplicants).Take(3).ToList();
+            
+            // Force UI refresh
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading dashboard data: {ex.Message}");
+            // Initialize empty collections
+            jobPosts = new List<JobPost>();
+            recentJobs = new List<JobPost>();
+            recentApplications = new List<EmployerApplicationModel>();
+            topPerformingJobs = new List<JobPost>();
+        }
+    }
+
+    private async Task EditJob(int jobId)
+    {
+        // Navigate to job edit page
+        NavigationManager.NavigateTo($"/employer/{Id}/jobs/edit/{jobId}");
+        await Task.CompletedTask;
+    }
+
+    private async Task ToggleJobStatus(int jobId)
+    {
+        var job = recentJobs?.FirstOrDefault(j => j.Id == jobId);
+        if (job != null)
+        {
+            job.IsActive = !job.IsActive;
+
+            // Update the job status in the database
+            DbContext.JobPosts.Update(job);
+            await DbContext.SaveChangesAsync();
+            await LoadDashboardData(); // Refresh data after toggling status
+        }
+    }
+
+    private async Task ViewApplication(int applicationId)
+    {
+        // Find the application and navigate to job seeker profile
+        var application = recentApplications?.FirstOrDefault(a => a.Id == applicationId);
+        if (application != null)
+        {
+            NavigationManager.NavigateTo($"/profile/jobseeker/{application.JobSeekerId}");
+        }
+        await Task.CompletedTask;
+    }
+
+    // Temporary models for UI development
+    public class EmployerJobModel
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Department { get; set; } = string.Empty;
+        public string Location { get; set; } = string.Empty;
+        public DateTime PostedDate { get; set; }
+        public int ApplicantCount { get; set; }
+        public int ViewCount { get; set; }
+        public bool IsActive { get; set; }
+    }
+
+    // This is the application model for the employer dashboard
+    public class EmployerApplicationModel
+    {
+        public int Id { get; set; }
+        public int JobSeekerId { get; set; }
+        public string ApplicantName { get; set; } = string.Empty;
+        public string JobTitle { get; set; } = string.Empty;
+        public DateTime AppliedDate { get; set; }
+    }
+}

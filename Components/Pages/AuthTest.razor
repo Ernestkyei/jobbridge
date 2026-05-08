@@ -1,0 +1,41 @@
+@page "/auth-test"
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>Auth Test - JobBridge</PageTitle>
+
+<h1 style="-webkit-text-fill-color: #000000; font-size: var(--font-size-2xl)">Authentication Test</h1>
+
+<!-- This is the authentication test page -->
+<AuthorizeView>
+    <Authorized>
+        <div class="alert alert-success role="alert" aria-live="polite">
+            <h2 style="font-size: var(--font-size-1xl)">User is authenticated!</h2>
+            <p>Name: @context.User.Identity?.Name</p>
+            <p>Email: @context.User.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress")?.Value</p>
+            <p>Role: @context.User.FindFirst("http://schemas.microsoft.com/ws/2008/06/identity/claims/role")?.Value</p>
+            <p>Claims:</p>
+            <ul>
+                @foreach (var claim in context.User.Claims)
+                {
+                    <li>@claim.Type: @claim.Value</li>
+                }
+            </ul>
+        </div>
+        </Authorized>
+        <!-- This is the not authorized section -->
+        <NotAuthorized>
+        <div class="alert alert-danger role="alert" aria-live="polite">
+            <h2 style="font-size: var(--font-size-1xl)">User is NOT authenticated</h2>
+        </div>    
+    </NotAuthorized>
+</AuthorizeView>
+
+@code { // This is the code block for the authentication test page
+    protected override async Task OnInitializedAsync() // This is the initialization handler
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        Console.WriteLine($"Auth state: {authState.User.Identity?.IsAuthenticated}");
+        Console.WriteLine($"User name: {authState.User.Identity?.Name}");
+    }
+}

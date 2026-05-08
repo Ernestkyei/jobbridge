@@ -1,0 +1,67 @@
+using System.ComponentModel.DataAnnotations;
+
+using System;
+
+namespace JobBridge.Data
+{
+    public class JobPost
+    {
+        public int Id { get; set; }
+
+        [Required(ErrorMessage = "Job title is required")] // Title of the job
+        public string JobTitle { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Department is required")] // Department of the job    
+        public string Department { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Employment type is required")] // Employment type of the job
+        public string EmploymentType { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Experience level is required")] // Experience level required for the job
+        public string ExperienceLevel { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Work arrangement is required")] // Work arrangement for the job
+        public string WorkArrangement { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Location is required")] // Location of the job
+        public string Location { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Timezone is required")] // Timezone of the job
+        public string Timezone { get; set; } = string.Empty;
+        public decimal MinimumSalary { get; set; }
+        public decimal MaximumSalary { get; set; }
+        public string AdditionalCompensation { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Job summary is required")] // Summary of the job
+        public string JobSummary { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Key responsibilities are required")] // Key responsibilities for the job
+        public string KeyResponsibilities { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Required qualifications are required")] // Required qualifications for the job
+        public string RequiredQualifications { get; set; } = string.Empty;
+        public string PreferredQualifications { get; set; } = string.Empty;
+        public string RequiredSkills { get; set; } = string.Empty;
+        public string NiceToHaveSkills { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Application method is required")] // Application method for the job
+        public string ApplicationMethod { get; set; } = string.Empty;
+
+        [Url(ErrorMessage = "Please enter a valid URL starting with http:// or https://")] // URL for external application
+        public string? ExternalApplicationUrl { get; set; }
+        public DateTime PostedDate { get; set; }
+        [Required(ErrorMessage = "Application deadline is required")] // Application deadline for the job
+        public DateTime ApplicationDeadline { get; set; }
+        public DateTime PostExpirationDate { get; set; }
+        public bool IsFeatured { get; set; } = false;
+        public bool IsUrgent { get; set; } = false;
+        public bool IsActive { get; set; } = true;
+        public int NumberOfApplicants { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
+        public int EmployerId { get; set; }
+        public Employers Employer { get; set; } = null!;
+        public int FieldId { get; set; }
+        public Field Field { get; set; } = null!;
+    }
+}

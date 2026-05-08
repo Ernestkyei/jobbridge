@@ -1,0 +1,461 @@
+@page "/employer/{id:int}/jobs/create"
+@using JobBridge.Data
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Authorization
+@inject JobBridgeContext DbContext
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@attribute [Authorize(Roles = "Employer")]
+@inject ILogger<JobCreate> Logger
+
+<PageTitle>Create Job - JobBridge</PageTitle>
+
+
+<div class="job-create-container">
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="header-content">
+            <h1 class="page-title">Create New Job Posting</h1>
+            <p class="page-subtitle">Attract the best talent with a compelling job description</p>
+        </div>
+
+        <div class="header-actions">
+            <a href="/employer/@Id/jobs" class="btn btn-secondary">
+                ← Back to Jobs
+            </a>
+        </div>
+    </div>
+
+    <!-- Job Creation Form -->
+    <div class="form-container">
+        <EditForm Model="jobPost" OnValidSubmit="HandleSubmit" class="job-form">
+
+            <!-- Job Basics Section -->
+            <div class="form-section">
+                <div class="section-header">
+                    <h2 class="section-title">Job Basics</h2>
+                    <p class="section-description">Start with the essential information about this position</p>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group span-2">
+                        <label id="jobTitleLabel" for="jobTitle" class="form-label required">Job Title</label>
+                        <input id="jobTitle" type="text" class="form-control" placeholder="e.g. Senior Software Engineer"
+                            aria-labelledby="jobTitleLabel" @bind="jobPost.JobTitle" aria-describedby="jobTitleHint" />
+                        <ValidationMessage For="@(() => jobPost.JobTitle)" class="text-danger" />
+                        <div id="jobTitleHint" class="form-hint">Be specific and clear about the role</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label id="departmentLabel" for="department" class="form-label required">Department</label>
+                        <select id="department" class="form-control" aria-labelledby="departmentLabel" @bind="jobPost.Department">
+                            <option value="">Select Department</option>
+                            <option value="Engineering">Engineering</option>
+                            <option value="Product">Product</option>
+                            <option value="Design">Design</option>
+                            <option value="Marketing">Marketing</option>
+                            <option value="Sales">Sales</option>
+                            <option value="Human Resources">Human Resources</option>
+                        </select>
+                        <ValidationMessage For="@(() => jobPost.Department)" class="text-danger" />
+                    </div>
+
+                    <div class="form-group">
+                        <label id="employmentTypeLabel" for="employmentType" class="form-label required">Employment Type</label>
+                        <select id="employmentType" class="form-control" aria-labelledby="employmentTypeLabel" @bind="jobPost.EmploymentType">
+                            <option value="">Select Type</option>
+                            <option value="Full-Time">Full-Time</option>
+                            <option value="Part-Time">Part-Time</option>
+                            <option value="Contract">Contract</option>
+                            <option value="Internship">Internship</option>
+                            <option value="Freelance">Freelance</option>
+                        </select>
+                        <ValidationMessage For="@(() => jobPost.EmploymentType)" class="text-danger" />
+                    </div>
+
+                    <div class="form-group">
+                        <label id="experienceLevelLabel" for="experienceLevel" class="form-label required">Experience Level</label>
+                        <select id="experienceLevel" class="form-control" aria-labelledby="experienceLevelLabel" @bind="jobPost.ExperienceLevel">
+                            <option value="">Select Level</option>
+                            <option value="Entry Level">Entry Level</option>
+                            <option value="Mid Level">Mid Level</option>
+                            <option value="Senior Level">Senior Level</option>
+                            <option value="Lead/Principal">Lead/Principal</option>
+                            <option value="Executive">Executive</option>
+                        </select>
+                        <ValidationMessage For="@(() => jobPost.ExperienceLevel)" class="text-danger" />
+                    </div>
+
+                    <div class="form-group">
+                        <label id="workArrangementLabel" for="workArrangement" class="form-label required">Work Arrangement</label>
+                        <select id="workArrangement" class="form-control" aria-labelledby="workArrangementLabel" @bind="jobPost.WorkArrangement">
+                            <option value="">Select Work Arrangement</option>
+                            <option value="On-site">On-site</option>
+                            <option value="Remote">Remote</option>
+                            <option value="Hybrid">Hybrid</option>
+                        </select>
+                        <ValidationMessage For="@(() => jobPost.WorkArrangement)" class="text-danger" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Location & Compensation Section -->
+            <div class="form-section">
+                <div class="section-header">
+                    <h2 class="section-title">Location & Compensation</h2>
+                    <p class="section-description">Specify where the work will be done and compensation details</p>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label id="locationLabel" for="location" class="form-label required">Location</label>
+                        <input id="location" type="text" class="form-control" placeholder="e.g. San Francisco, CA"
+                            aria-labelledby="locationLabel" @bind="jobPost.Location" @oninput="OnLocationChanged" />
+                        <ValidationMessage For="@(() => jobPost.Location)" class="text-danger" />
+                    </div>
+
+                    <div class="form-group">
+                        <label id="timezoneLabel" for="timezone" class="form-label required">Timezone</label>
+                        <select id="timezone" class="form-control" aria-labelledby="timezoneLabel" @bind="jobPost.Timezone">
+                            <option value="">Select Timezone</option>
+                            <option value="PST (Pacific)">PST (Pacific)</option>
+                            <option value="MST (Mountain)">MST (Mountain)</option>
+                            <option value="CST (Central)">CST (Central)</option>
+                            <option value="EST (Eastern)">EST (Eastern)</option>
+                        </select>
+                        <ValidationMessage For="@(() => jobPost.Timezone)" class="text-danger" />
+                    </div>
+
+                    <div class="form-group">
+                        <label id="minSalaryLabel" for="minSalary" class="form-label">Minimum Salary</label>
+                        <div class="input-group">
+                            <span class="input-prefix">@currencySymbol</span>
+                            <input id="minSalary" type="text" class="form-control" placeholder="80,000"
+                                aria-labelledby="minSalaryLabel" @bind="minSalaryFormatted" @oninput="OnMinSalaryChanged" />
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label id="maxSalaryLabel" for="maxSalary" class="form-label">Maximum Salary</label>
+                        <div class="input-group">
+                            <span class="input-prefix">@currencySymbol</span>
+                            <input id="maxSalary" type="text" class="form-control" placeholder="120,000"
+                                aria-labelledby="maxSalaryLabel" @bind="maxSalaryFormatted" @oninput="OnMaxSalaryChanged" />
+                        </div>
+                    </div>
+
+                    <div class="form-group span-2">
+                        <label id="additionalCompensationLabel" for="additionalCompensation" class="form-label">Additional Compensation</label>
+                        <input id="additionalCompensation" type="text" class="form-control" placeholder="e.g. Equity, bonuses, benefits..."
+                            aria-labelledby="additionalCompensationLabel" @bind="jobPost.AdditionalCompensation" aria-describedby="additionalCompHint" />
+                        <div id="additionalCompHint" class="form-hint">Mention equity, bonuses, or other benefits</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Job Description Section -->
+            <div class="form-section">
+                <div class="section-header">
+                    <h2 class="section-title">Job Description</h2>
+                    <p class="section-description">Describe the role, responsibilities, and what makes it exciting</p>
+                </div>
+
+                <div class="form-group">
+                    <label id="jobSummaryLabel" for="jobSummary" class="form-label required">Job Summary</label>
+                    <textarea id="jobSummary" class="form-control textarea-large" rows="4"
+                        placeholder="Write a compelling summary of the role and what the candidate will do..."
+                        aria-labelledby="jobSummaryLabel" @bind="jobPost.JobSummary" aria-describedby="jobSummaryHint"></textarea>
+                    <ValidationMessage For="@(() => jobPost.JobSummary)" class="text-danger" />
+                    <div id="jobSummaryHint" class="form-hint">Keep it engaging and highlight key aspects of the role</div>
+                </div>
+
+                <div class="form-group">
+                    <label id="keyResponsibilitiesLabel" for="keyResponsibilities" class="form-label required">Key Responsibilities</label>
+                    <textarea id="keyResponsibilities" class="form-control textarea-large" rows="6"
+                        placeholder="• List the main responsibilities and duties&#10;• Use bullet points for clarity&#10;• Focus on day-to-day activities"
+                        aria-labelledby="keyResponsibilitiesLabel" @bind="jobPost.KeyResponsibilities"></textarea>
+                    <ValidationMessage For="@(() => jobPost.KeyResponsibilities)" class="text-danger" />
+                </div>
+
+                <div class="form-group">
+                    <label id="requiredQualificationsLabel" for="requiredQualifications" class="form-label required">Required Qualifications</label>
+                    <textarea id="requiredQualifications" class="form-control textarea-large" rows="6"
+                        placeholder="• List essential skills and experience&#10;• Include education requirements if necessary&#10;• Mention years of experience needed"
+                        aria-labelledby="requiredQualificationsLabel" @bind="jobPost.RequiredQualifications"></textarea>
+                    <ValidationMessage For="@(() => jobPost.RequiredQualifications)" class="text-danger" />
+                </div>
+
+                <div class="form-group">
+                    <label id="preferredQualificationsLabel" for="preferredQualifications" class="form-label">Preferred Qualifications</label>
+                    <textarea id="preferredQualifications" class="form-control textarea-large" rows="4"
+                        placeholder="• Nice-to-have skills and experience&#10;• Additional certifications or qualifications"
+                        aria-labelledby="preferredQualificationsLabel" @bind="jobPost.PreferredQualifications"></textarea>
+                </div>
+            </div>
+
+            <!-- Skills & Requirements Section -->
+            <div class="form-section">
+                <div class="section-header">
+                    <h2 class="section-title">Skills & Requirements</h2>
+                    <p class="section-description">Add specific skills and technologies required for this role</p>
+                </div>
+
+                <div class="form-group">
+                    <label id="requiredSkillsLabel" for="requiredSkills" class="form-label">Required Skills</label>
+                    <textarea id="requiredSkills" class="form-control textarea-large" rows="4" placeholder="Javascript, React, Node.js"
+                        aria-labelledby="requiredSkillsLabel" @bind="jobPost.RequiredSkills"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label id="niceToHaveSkillsLabel" for="niceToHaveSkills" class="form-label">Nice-to-Have Skills</label>
+                    <textarea id="niceToHaveSkills" class="form-control textarea-large" rows="4" placeholder="Python, AWS, etc."
+                        aria-labelledby="niceToHaveSkillsLabel" @bind="jobPost.NiceToHaveSkills"></textarea>
+                </div>
+            </div>
+
+            <!-- Application Settings Section -->
+            <div class="form-section">
+                <div class="section-header">
+                    <h2 class="section-title">Application Settings</h2>
+                    <p class="section-description">Configure how candidates can apply and deadlines</p>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label id="applicationMethodLabel" for="applicationMethod" class="form-label required">Application Method</label>
+                        <select id="applicationMethod" class="form-control" aria-labelledby="applicationMethodLabel" @bind="jobPost.ApplicationMethod">
+                            <option value="">Select Application Method</option>
+                            <option value="JobBridge Application System">JobBridge Application System</option>
+                            <option value="External Link/Email">External Link/Email</option>
+                        </select>
+                        <ValidationMessage For="@(() => jobPost.ApplicationMethod)" class="text-danger" />
+                    </div>
+
+                    <div class="form-group">
+                        <label id="externalApplicationUrlLabel" for="externalApplicationUrl" class="form-label">External Application URL</label>
+                        <InputText id="externalApplicationUrl" type="url" class="form-control" placeholder="https://company.com/careers/apply"
+                            aria-labelledby="externalApplicationUrlLabel" @bind-Value="jobPost.ExternalApplicationUrl" />
+                        <ValidationMessage For="@(() => jobPost.ExternalApplicationUrl)" class="text-danger" />
+                        <div class="form-hint">Only required if using external application method</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label id="applicationDeadlineLabel" for="applicationDeadline" class="form-label required">Application Deadline</label>
+                        <input id="applicationDeadline" type="date" class="form-control" aria-labelledby="applicationDeadlineLabel" @bind="jobPost.ApplicationDeadline" />
+                    </div>
+
+                    <div class="form-group">
+                        <label id="postDurationLabel" for="postDuration" class="form-label">Job Posting Duration</label>
+                        <select id="postDuration" class="form-control" aria-labelledby="postDurationLabel" @bind="postDuration">
+                            <option value="30">30 days</option>
+                            <option value="60">60 days</option>
+                            <option value="90">90 days</option>
+                            <option value="180">180 days</option>
+                        </select>
+                    </div>
+                </div>
+
+                <fieldset class="form-group">
+                    <legend>Job Type</legend>
+                    <div class="checkbox-group">
+                        <label class="checkbox-option">
+                            <input type="radio" name="jobType" value="featured" @onchange="OnJobTypeChanged" checked="@jobPost.IsFeatured" />
+                            <span class="checkbox-label">This is a featured job posting</span>
+                            <span class="checkbox-hint">Featured jobs get higher visibility</span>
+                        </label>
+
+                        <label class="checkbox-option">
+                            <input type="radio" name="jobType" value="urgent" @onchange="OnJobTypeChanged" checked="@jobPost.IsUrgent" />
+                            <span class="checkbox-label">This is an urgent hiring need</span>
+                            <span class="checkbox-hint">Shows an "urgent" badge to attract faster applications</span>
+                        </label>
+                    </div>
+                </fieldset>
+            </div>
+
+            <!-- Error Message -->
+            <DataAnnotationsValidator />
+            <ValidationSummary class="validation-summary" />
+            <div role="alert" aria-live="assertive" class="text-danger">@errorMessage</div>
+
+            <!-- Form Actions -->
+            <div class="form-actions">
+                <div class="actions-left"></div>
+
+                <div class="actions-right">
+                    <button type="button" class="btn btn-outline" @onclick="HandleCancel">
+                        Cancel
+                    </button>
+
+                    <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
+                        @if (isSubmitting)
+                        {
+                            <span>Publishing...</span>
+                        }
+                        else
+                        {
+                            <span>Publish Job</span>
+                        }
+                    </button>
+                </div>
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+
+@code {
+    [Parameter] public int Id { get; set; }
+    [CascadingParameter] private ErrorDisplay? ErrorDisplay { get; set; }
+    private JobPost jobPost = new JobPost()
+    {
+        ApplicationDeadline = DateTime.UtcNow.AddDays(30) // Default to 30 days from now
+    };
+    private int postDuration = 30; // Default post duration for now
+    private bool isSubmitting = false;
+    private string? errorMessage = null;
+    private string currencySymbol = "$"; // Default to USD
+    private string minSalaryFormatted = "";
+    private string maxSalaryFormatted = "";
+
+
+
+    private void OnLocationChanged(ChangeEventArgs e)
+    {
+        var location = e.Value?.ToString()?.ToLower() ?? "";
+        
+        if (location.Contains("uk") || location.Contains("united kingdom") || location.Contains("london") || location.Contains("england") || location.Contains("scotland") || location.Contains("wales"))
+        {
+            currencySymbol = "£";
+        }
+        else if (location.Contains("canada") || location.Contains("toronto") || location.Contains("vancouver") || location.Contains("montreal"))
+        {
+            currencySymbol = "C$";
+        }
+        else if (location.Contains("australia") || location.Contains("sydney") || location.Contains("melbourne") || location.Contains("brisbane"))
+        {
+            currencySymbol = "A$";
+        }
+        else if (location.Contains("euro") || location.Contains("germany") || location.Contains("france") || location.Contains("spain") || location.Contains("italy") || location.Contains("netherlands") || location.Contains("belgium"))
+        {
+            currencySymbol = "€";
+        }
+        else if (location.Contains("japan") || location.Contains("tokyo") || location.Contains("osaka"))
+        {
+            currencySymbol = "¥";
+        }
+        else if (location.Contains("india") || location.Contains("mumbai") || location.Contains("delhi") || location.Contains("bangalore"))
+        {
+            currencySymbol = "₹";
+        }
+        else if (location.Contains("nigeria") || location.Contains("lagos") || location.Contains("abuja") || location.Contains("kano") || location.Contains("ibadan") || location.Contains("calabar"))
+        {
+            currencySymbol = "₦";
+        }
+        else
+        {
+            currencySymbol = "$"; // Default to USD for US and other locations
+        }
+        
+        StateHasChanged();
+    }
+
+    private void OnMinSalaryChanged(ChangeEventArgs e)
+    {
+        var input = e.Value?.ToString()?.Replace(",", "") ?? "";
+        if (decimal.TryParse(input, out var value))
+        {
+            jobPost.MinimumSalary = value;
+            minSalaryFormatted = value.ToString("N0");
+        }
+        else
+        {
+            minSalaryFormatted = input;
+        }
+    }
+
+    private void OnMaxSalaryChanged(ChangeEventArgs e)
+    {
+        var input = e.Value?.ToString()?.Replace(",", "") ?? "";
+        if (decimal.TryParse(input, out var value))
+        {
+            jobPost.MaximumSalary = value;
+            maxSalaryFormatted = value.ToString("N0");
+        }
+        else
+        {
+            maxSalaryFormatted = input;
+        }
+    }
+
+    private void OnJobTypeChanged(ChangeEventArgs e)
+    {
+        var value = e.Value?.ToString();
+        jobPost.IsFeatured = value == "featured";
+        jobPost.IsUrgent = value == "urgent";
+    }
+
+    private void HandleCancel()
+    {
+        Navigation.NavigateTo($"/employer/{Id}/jobs");
+    }
+
+    private async Task HandleSubmit()
+    {
+        isSubmitting = true;
+        errorMessage = null;
+
+        try
+        {
+            // Validate salary range
+            if (jobPost.MinimumSalary > jobPost.MaximumSalary)
+            {
+                ErrorDisplay?.ShowError("Minimum salary cannot be greater than maximum salary");
+                return;
+            }
+
+            // Validate deadline
+            if (jobPost.ApplicationDeadline < DateTime.Now)
+            {
+                ErrorDisplay?.ShowError("Application deadline must be in the future");
+                return;
+            }
+
+            // Set the default values for the new job post
+            jobPost.PostedDate = DateTime.UtcNow;
+            jobPost.CreatedAt = DateTime.UtcNow;
+            jobPost.UpdatedAt = DateTime.UtcNow;
+            jobPost.NumberOfApplicants = 0;
+            jobPost.PostExpirationDate = DateTime.UtcNow.AddDays(postDuration);
+            jobPost.EmployerId = Id;
+            jobPost.FieldId = 1;
+
+            // Add the job post to the database
+            DbContext.JobPosts.Add(jobPost);
+            await DbContext.SaveChangesAsync();
+
+            // Show success message
+            ErrorDisplay?.ShowSuccess("Job post created successfully!");
+            
+            // Navigate after a short delay
+            await Task.Delay(1500);
+            Navigation.NavigateTo($"/employer/{Id}/jobs");
+        }
+        catch (DbUpdateException dbEx)
+        {
+            Logger.LogError(dbEx, "Database error creating job post");
+            ErrorDisplay?.ShowError("Failed to save job post. Please check your input and try again.");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error creating job post");
+            ErrorDisplay?.ShowError("An unexpected error occurred. Please try again later.");
+        }
+        finally
+        {
+            isSubmitting = false;
+            StateHasChanged();
+        }
+    }
+}

@@ -1,0 +1,467 @@
+@page "/jobs/{id:int}"
+@page "/job-listings/{id:int}"
+@page "/job/{id:int}"
+@using JobBridge.Data
+@using JobBridge.Models
+@using Microsoft.EntityFrameworkCore
+@using System.Security.Claims
+@inject JobBridgeContext DbContext
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>@(jobPost?.JobTitle ?? "Job Details") - JobBridge</PageTitle>
+
+@if (isLoading)
+{
+    <div class="loading-container">
+        <p>Loading job details...</p>
+    </div>
+}
+else if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="error-container">
+        <h2>Job Missing 👀</h2>
+        <p>@errorMessage</p>
+        <a href="/jobs" class="btn btn-primary">Back to Jobs</a>
+    </div>
+}
+else if (jobPost != null)
+{
+    <div class="job-details-container">
+        <!-- Breadcrumb Navigation -->
+        <div class="breadcrumb-nav">
+            <a href="/jobs" class="breadcrumb-link">Jobs</a>
+            <span class="breadcrumb-separator" aria-hidden="true">→</span>
+            <span class="breadcrumb-current">@jobPost.JobTitle</span>
+        </div>
+
+        <!-- Job Header -->
+        <div class="job-header">
+            <div class="job-header-content">
+                <div class="company-info">
+                    <div class="company-logo">TC</div>
+                    <div class="company-details">
+                        <h1 class="job-title">@jobPost.JobTitle</h1>
+                        <p class="company-name">@jobPost.Employer.Name</p>
+                        <div class="job-meta">
+                            <span class="meta-item">@jobPost.Location</span>
+                            <span class="meta-separator">•</span>
+                            <span class="meta-item">@jobPost.EmploymentType</span>
+                            <span class="meta-separator">•</span>
+                            <span class="meta-item">Posted on @jobPost.PostedDate.ToString("MMMM dd, yyyy")</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="job-actions">
+                    <button class="btn btn-secondary bookmark-btn" @onclick="SaveJob" aria-label="@(isBookmarked ? "Remove from saved jobs" : "Save this job")">
+                        <span class="bookmark-icon" aria-hidden="true">@(isBookmarked ? "❤️" : "♡")</span>
+                        @(isBookmarked ? "Saved" : "Save Job")
+                    </button>
+                    <button class="btn btn-secondary" style="background-color: #22c55e; color: white; border-color: #22c55e;" @onclick="ViewJob">
+                        <span class="apply-icon" aria-hidden="true">→</span>
+                        Apply External
+                    </button>
+                    <button class="btn btn-primary apply-btn" @onclick="ApplyForJob">
+                        Apply Now
+                    </button>
+                </div>
+            </div>
+
+            <!-- Job Stats -->
+            <div class="job-stats-bar">
+                <div class="stat-item">
+                    <span class="stat-label">Salary Range</span>
+                    <span class="stat-value">$@jobPost.MinimumSalary.ToString("N0") -
+                        $@jobPost.MaximumSalary.ToString("N0")</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Experience</span>
+                    <span class="stat-value">@jobPost.ExperienceLevel</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Job Type</span>
+                    <span class="stat-value">@jobPost.EmploymentType</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="job-content">
+            <!-- Left Column -->
+            <div class="content-main">
+                <!-- Job Description -->
+                <section class="content-section">
+                    <h2 class="section-title">Job Description</h2>
+                    <div class="section-content">
+                        <p>@jobPost.JobSummary</p>
+
+                        <h3>Key Responsibilities</h3>
+                        <p>@jobPost.KeyResponsibilities</p>
+                    </div>
+                </section>
+
+                <!-- Requirements -->
+                <section class="content-section">
+                    <h2 class="section-title">Requirements</h2>
+                    <div class="section-content">
+                        <h3>Required Skills</h3>
+                        <p>@jobPost.RequiredSkills</p>
+
+                        <h3>Preferred Qualifications</h3>
+                        <p>@jobPost.PreferredQualifications</p>
+                    </div>
+                </section>
+
+                <!-- Benefits -->
+                <section class="content-section">
+                    <h2 class="section-title">Benefits & Perks</h2>
+                    <div class="section-content">
+                        <div class="benefits-grid">
+                            <div class="benefit-item">
+                                <div class="benefit-icon" aria-hidden="true">💰</div>
+                                <div class="benefit-content">
+                                    <h4>Competitive Salary</h4>
+                                    <p>Market-leading compensation package</p>
+                                </div>
+                            </div>
+                            <div class="benefit-item">
+                                <div class="benefit-icon" aria-hidden="true">🏥</div>
+                                <div class="benefit-content">
+                                    <h4>Health Insurance</h4>
+                                    <p>Comprehensive health, dental, and vision</p>
+                                </div>
+                            </div>
+                            <div class="benefit-item">
+                                <div class="benefit-icon" aria-hidden="true">🏠</div>
+                                <div class="benefit-content">
+                                    <h4>Remote Work</h4>
+                                    <p>Flexible hybrid work arrangements</p>
+                                </div>
+                            </div>
+                            <div class="benefit-item">
+                                <div class="benefit-icon" aria-hidden="true">📚</div>
+                                <div class="benefit-content">
+                                    <h4>Learning Budget</h4>
+                                    <p>Annual budget for courses and conferences</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Skills Required -->
+                <section class="content-section">
+                    <h2 class="section-title">Skills & Technologies</h2>
+                    <div class="section-content">
+                        <h3>Required Skills</h3>
+                        <p>@jobPost.RequiredSkills</p>
+
+                        <h3>Nice to Have Skills</h3>
+   <p>@jobPost.NiceToHaveSkills</p>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Right Sidebar -->
+            <div class="content-sidebar">
+                <!-- Apply Card -->
+                <div class="apply-card">
+                    <h3 class="apply-title">Ready to Apply?</h3>
+                    <p class="apply-description">Join our team and make an impact</p>
+                    <button class="btn btn-secondary btn-large apply-main-btn" style="background-color: #22c55e; color: white; border-color: #22c55e;" @onclick="ViewJob">
+                        Apply External
+                    </button>
+                    <button class="btn btn-primary btn-large apply-main-btn" @onclick="ApplyForJob">
+                        Apply for this Position
+                    </button>
+                    <div class="apply-meta">
+                        <p class="apply-note">You will be redirected to the company's application page</p>
+                    </div>
+                </div>
+
+                <!-- Company Info -->
+                <div class="company-card">
+                    <div class="company-card-header">
+                    <div class="company-logo-large">@GetCompanyInitials(jobPost.Employer?.Name)</div>
+                    <div class="company-info-text">
+                        <h3 class="company-card-name">@jobPost.Employer?.Name</h3>
+                        <p class="company-size">@jobPost.Employer?.NumberOfEmployees employees</p>
+                        </div>
+                    </div>
+
+                    <div class="company-description">
+                        <p>@(jobPost.Employer?.Name ?? "Company") is a dynamic organization focused on delivering exceptional results and creating opportunities for growth and innovation.</p>
+                    </div>
+
+                    <div class="company-stats">
+                        <div class="company-stat">
+                            <span class="stat-number">@(companyJobCount)+</span>
+                            <span class="stat-label">Open Positions</span>
+                        </div>
+                        <div class="company-stat">
+                            <span class="stat-number">@(GetCompanyRating())</span>
+                            <span class="stat-label">Company Rating</span>
+                        </div>
+                    </div>
+
+                    <a href="#" class="company-link">View Company Profile</a>
+                </div>
+
+                <!-- Similar Jobs -->
+                <div class="similar-jobs-card">
+                    <h3 class="similar-title">Similar Jobs</h3>
+                    <div class="similar-jobs-list">
+                        @if (similarJobs?.Any() == true)
+                        {
+                            @foreach (var similarJob in similarJobs)
+                            {
+                                <div class="similar-job-item">
+                                    <a href="/jobs/@similarJob.Id">
+                                        <h4 class="similar-job-title">@similarJob.JobTitle</h4>
+                                        <p class="similar-job-company">@similarJob.Employer?.Name</p>
+                                        <p class="similar-job-location">@similarJob.Location</p>
+                                    </a>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <p>No similar jobs found.</p>
+                        }
+                    </div>
+                    <a href="/jobs" class="view-all-link">View All Similar Jobs</a>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+
+
+@code { // This is the code block for the job details page
+    [Parameter] public int Id { get; set; }
+    private JobPost? jobPost;
+    private bool isLoading = true;
+    private string? errorMessage;
+    private bool isBookmarked = false;
+    private JobSeeker? currentJobSeeker;
+    private List<JobPost>? similarJobs;
+    private int companyJobCount = 0;
+
+    // This is the view job handler
+    private async Task ViewJob()
+    {
+        if (jobPost != null)
+        {
+            string applicationUrl = "";
+            
+            // Check if there's an external application URL
+            if (!string.IsNullOrEmpty(jobPost.ExternalApplicationUrl))
+            {
+                applicationUrl = jobPost.ExternalApplicationUrl;
+            }
+            else
+            {
+                // Generate a mock application URL based on company name
+                var companyName = jobPost.Employer?.Name?.ToLower()?.Replace(" ", "") ?? "company";
+                applicationUrl = $"https://careers.{companyName}.com/apply/{jobPost.Id}";
+            }
+            
+            // Open in new tab
+            await JSRuntime.InvokeVoidAsync("open", applicationUrl, "_blank");
+        }
+    }
+
+    // This is the apply for job handler
+    private void ApplyForJob()
+    {
+        if (jobPost != null)
+        {
+            // Navigate to apply endpoint to add to Recent Applications
+            Navigation.NavigateTo($"/apply/{jobPost.Id}");
+        }
+    }
+
+
+ // This is the get company initials handler
+        private string GetCompanyInitials(string? companyName)
+    {
+        if (string.IsNullOrEmpty(companyName)) return "?";
+        
+        var words = companyName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (words.Length >= 2)
+        {
+            return $"{words[0][0]}{words[1][0]}".ToUpper();
+        }
+return companyName?.Length >= 2 ? companyName.Substring(0, 2).ToUpper() : companyName?.ToUpper() ?? "?";
+    }
+
+    // This is the save job handler
+    private async Task SaveJob()
+    {
+        if (currentJobSeeker != null)
+        {
+            if (isBookmarked)
+            {
+                // Remove bookmark
+                var bookmark = await DbContext.Bookmarks
+                    .FirstOrDefaultAsync(b => b.JobSeekerId == currentJobSeeker.Id && b.JobPostId == Id);
+                
+                if (bookmark != null)
+                {
+                    DbContext.Bookmarks.Remove(bookmark);
+                    await DbContext.SaveChangesAsync();
+                    isBookmarked = false;
+                }
+            }
+            else
+            {
+                // Add bookmark
+                var bookmark = new Bookmark
+                {
+                    JobSeekerId = currentJobSeeker.Id,
+                    JobPostId = Id
+                };
+                
+                DbContext.Bookmarks.Add(bookmark);
+                await DbContext.SaveChangesAsync();
+                isBookmarked = true;
+            }
+            
+            StateHasChanged();
+        }
+        
+    }    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            jobPost = await DbContext.JobPosts
+                .Include(j => j.Employer)
+                .FirstOrDefaultAsync(j => j.Id == Id);
+
+            if (jobPost == null)
+            {
+                errorMessage = "Post not found";
+            }
+            else
+            {
+                // Check if user is logged in and has bookmarked this job
+                var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+                if (authState.User.Identity?.IsAuthenticated == true)
+                {
+                    var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                    if (!string.IsNullOrEmpty(userId))
+                    {
+                        currentJobSeeker = await DbContext.JobSeekers
+                            .Include(js => js.Bookmarks)
+                            .FirstOrDefaultAsync(js => js.UserId == userId);
+
+                        if (currentJobSeeker != null)
+                        {
+                            isBookmarked = currentJobSeeker.Bookmarks.Any(b => b.JobPostId == Id);
+                        }
+                    }
+                }
+                
+                // Track job view
+                await TrackJobView();
+                
+                // Load similar jobs
+                await LoadSimilarJobs();
+                
+                // Load company data
+                await LoadCompanyData();
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading job details: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+    
+    private async Task LoadSimilarJobs()
+    {
+        if (jobPost != null)
+        {
+            try
+            {
+                similarJobs = await DbContext.JobPosts
+                    .Include(jp => jp.Employer)
+                    .Where(jp => jp.Id != jobPost.Id && jp.IsActive && 
+                           (jp.Department == jobPost.Department || 
+                            jp.ExperienceLevel == jobPost.ExperienceLevel ||
+                            jp.Location == jobPost.Location))
+                    .OrderByDescending(jp => jp.PostedDate)
+                    .Take(3)
+                    .ToListAsync();
+            }
+            catch
+            {
+                similarJobs = new List<JobPost>();
+            }
+        }
+    }
+    
+    private async Task LoadCompanyData()
+    {
+        if (jobPost?.Employer != null)
+        {
+            try
+            {
+                companyJobCount = await DbContext.JobPosts
+                    .CountAsync(jp => jp.EmployerId == jobPost.EmployerId && jp.IsActive);
+            }
+            catch
+            {
+                companyJobCount = 1;
+            }
+        }
+    }
+    
+    private string GetCompanyRating()
+    {
+        // Generate a realistic rating based on company size and job count
+        if (jobPost?.Employer?.NumberOfEmployees > 100)
+            return "4.5";
+        else if (jobPost?.Employer?.NumberOfEmployees > 50)
+            return "4.3";
+        else
+            return "4.1";
+    }
+    
+    private async Task TrackJobView()
+    {
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            
+            JobSeeker? jobSeeker = null;
+            if (!string.IsNullOrEmpty(userId))
+            {
+                jobSeeker = await DbContext.JobSeekers
+                    .FirstOrDefaultAsync(js => js.UserId == userId);
+            }
+            
+            var jobView = new JobView
+            {
+                JobPostId = Id,
+                JobSeekerId = jobSeeker?.Id,
+                ViewedAt = DateTime.Now
+            };
+            
+            DbContext.JobViews.Add(jobView);
+            await DbContext.SaveChangesAsync();
+        }
+        catch
+        {
+            // Silently handle tracking errors
+        }
+    }
+}

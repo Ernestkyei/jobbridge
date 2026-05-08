@@ -1,0 +1,264 @@
+@page "/saved-searches"
+@attribute [Authorize(Roles = "JobSeeker")]
+@using JobBridge.Data
+@using JobBridge.Models
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@inject JobBridgeContext DbContext
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>Saved Searches - JobBridge</PageTitle>
+<!-- This is the saved searches page -->
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <h2>My Saved Searches</h2>
+            
+            @if (savedSearches?.Any() == true)
+            {
+                <div class="search-list">
+                    @foreach (var search in savedSearches)
+                    {
+                        <div class="search-card">
+                            <div class="search-info">
+                                <h4>@search.SearchName</h4>
+                                <div class="search-criteria">
+                                    @if (!string.IsNullOrEmpty(search.JobTitle))
+                                    {
+                                        <span class="criteria-tag" aria-hidden="true">📋 @search.JobTitle</span>
+                                    }
+                                    @if (!string.IsNullOrEmpty(search.Location))
+                                    {
+                                        <span class="criteria-tag" aria-hidden="true">📍 @search.Location</span>
+                                    }
+                                    @if (!string.IsNullOrEmpty(search.EmploymentType))
+                                    {
+                                        <span class="criteria-tag" aria-hidden="true">💼 @search.EmploymentType</span>
+                                    }
+                                    @if (search.MinSalary.HasValue || search.MaxSalary.HasValue)
+                                    {
+                                        <span class="criteria-tag" aria-hidden="true">💰 @GetSalaryRange(search)</span>
+                                    }
+                                </div>
+                                <small class="text-muted">Created @search.CreatedAt.ToString("MMM dd, yyyy")</small>
+                            </div>
+                            <div class="search-actions">
+                                <button class="btn btn-primary btn-sm" @onclick="() => RunSearch(search)">Run Search</button>
+                                <button class="btn btn-outline-secondary btn-sm" @onclick="() => ToggleActive(search)">
+                                    @(search.IsActive ? "Disable" : "Enable")
+                                </button>
+                                <button class="btn btn-outline-danger btn-sm" @onclick="() => DeleteSearch(search.Id)">Delete</button>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="empty-state">
+                    <p>No saved searches yet. Create your first search to get started!</p>
+                </div>
+            }
+        </div>
+        <!-- Create New Search Form -->
+        <div class="col-md-4">
+            <div class="create-search-card">
+                <h4>Create New Search</h4>
+                <EditForm Model="@newSearch" OnValidSubmit="@CreateSearch">
+                    <div class="mb-3">
+                        <label for="searchName" class="form-label">Search Name</label>
+                        <InputText id="searchName" class="form-control" @bind-Value="newSearch.SearchName" placeholder="e.g., Remote Developer Jobs" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="jobTitle" class="form-label">Job Title</label>
+                        <InputText id="jobTitle" class="form-control" @bind-Value="newSearch.JobTitle" placeholder="e.g., Software Developer" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="location" class="form-label">Location</label>
+                        <InputText id="location" class="form-control" @bind-Value="newSearch.Location" placeholder="e.g., Remote, New York" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="employmentType" class="form-label">Employment Type</label>
+                        <InputSelect id="employmentType" class="form-control" @bind-Value="newSearch.EmploymentType">
+                            <option value="">Any</option>
+                            <option value="Full-time">Full-time</option>
+                            <option value="Part-time">Part-time</option>
+                            <option value="Contract">Contract</option>
+                            <option value="Internship">Internship</option>
+                        </InputSelect>
+                    </div>
+                    <div class="row">
+                        <div class="col-6">
+                            <label for="minSalary" class="form-label">Min Salary</label>
+                            <InputNumber id="minSalary" class="form-control" @bind-Value="newSearch.MinSalary" placeholder="50000" />
+                        </div>
+                        <div class="col-6">
+                            <label for="maxSalary" class="form-label">Max Salary</label>
+                            <InputNumber id="maxSalary" class="form-control" @bind-Value="newSearch.MaxSalary" placeholder="100000" />
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 mt-3">Save Search</button>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Styles for the saved searches page -->
+<style>
+    .search-card {
+        background: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .search-info h4 {
+        margin: 0 0 10px 0;
+        color: #333;
+    }
+
+    .search-criteria {
+        margin: 10px 0;
+    }
+
+    .criteria-tag {
+        display: inline-block;
+        background: #f8f9fa;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        margin-right: 8px;
+        margin-bottom: 4px;
+    }
+
+    .search-actions {
+        display: flex;
+        gap: 8px;
+        flex-direction: column;
+    }
+
+    .create-search-card {
+        background: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 20px;
+        position: sticky;
+        top: 20px;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 40px;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+</style>
+
+@code { // This is the code block for the saved searches page
+    private List<SavedSearch>? savedSearches; // List of saved searches
+    private SavedSearch newSearch = new(); // New search criteria
+    private JobSeeker? currentJobSeeker;
+
+    protected override async Task OnInitializedAsync() // This is the initialization handler
+    {
+        await LoadCurrentJobSeeker();
+        await LoadSavedSearches();
+    }
+
+    private async Task LoadCurrentJobSeeker()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync(); // Get the authentication state
+        var userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value; // Get the user ID
+
+        if (!string.IsNullOrEmpty(userId))
+        {
+            currentJobSeeker = await DbContext.JobSeekers
+                .FirstOrDefaultAsync(js => js.UserId == userId);
+        }
+    }
+
+    // This is the method to load saved searches
+    private async Task LoadSavedSearches()
+    {
+        if (currentJobSeeker != null)
+        {
+            savedSearches = await DbContext.SavedSearches
+                .Where(ss => ss.JobSeekerId == currentJobSeeker.Id)
+                .OrderByDescending(ss => ss.CreatedAt)
+                .ToListAsync();
+        }
+    }
+
+    // This is the method to create a new saved search
+    private async Task CreateSearch()
+    {
+        if (currentJobSeeker != null && !string.IsNullOrEmpty(newSearch.SearchName))
+        {
+            newSearch.JobSeekerId = currentJobSeeker.Id;
+            DbContext.SavedSearches.Add(newSearch);
+            await DbContext.SaveChangesAsync();
+            
+            newSearch = new SavedSearch();
+            await LoadSavedSearches();
+        }
+    }
+
+    // This is the method to toggle the active state of a saved search
+    private async Task ToggleActive(SavedSearch search)
+    {
+        search.IsActive = !search.IsActive;
+        await DbContext.SaveChangesAsync();
+        await LoadSavedSearches();
+    }
+
+    // This is the method to delete a saved search
+    private async Task DeleteSearch(int searchId)
+    {
+        var search = await DbContext.SavedSearches.FindAsync(searchId);
+        if (search != null)
+        {
+            DbContext.SavedSearches.Remove(search);
+            await DbContext.SaveChangesAsync();
+            await LoadSavedSearches();
+        }
+    }
+
+    // This is the method to run a saved search
+    private void RunSearch(SavedSearch search)
+    {
+        var queryParams = new List<string>();
+        
+        if (!string.IsNullOrEmpty(search.JobTitle))
+            queryParams.Add($"title={Uri.EscapeDataString(search.JobTitle)}");
+        if (!string.IsNullOrEmpty(search.Location))
+            queryParams.Add($"location={Uri.EscapeDataString(search.Location)}");
+        if (!string.IsNullOrEmpty(search.EmploymentType))
+            queryParams.Add($"type={Uri.EscapeDataString(search.EmploymentType)}");
+        if (search.MinSalary.HasValue)
+            queryParams.Add($"minSalary={search.MinSalary}");
+        if (search.MaxSalary.HasValue)
+            queryParams.Add($"maxSalary={search.MaxSalary}");
+
+        var queryString = queryParams.Any() ? "?" + string.Join("&", queryParams) : "";
+        Navigation.NavigateTo($"/job-listings{queryString}");
+    }
+
+    // This is the method to get the salary range for a saved search
+    private string GetSalaryRange(SavedSearch search)
+    {
+        if (search.MinSalary.HasValue && search.MaxSalary.HasValue)
+            return $"${search.MinSalary:N0} - ${search.MaxSalary:N0}";
+        if (search.MinSalary.HasValue)
+            return $"${search.MinSalary:N0}+";
+        if (search.MaxSalary.HasValue)
+            return $"Up to ${search.MaxSalary:N0}";
+        return "";
+    }
+}

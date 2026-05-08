@@ -1,0 +1,181 @@
+is_global = true
+build_property.TargetFramework = net9.0
+build_property.TargetFramework = net9.0
+build_property.TargetPlatformMinVersion = 
+build_property.TargetPlatformMinVersion = 
+build_property.UsingMicrosoftNETSdkWeb = true
+build_property.UsingMicrosoftNETSdkWeb = true
+build_property.ProjectTypeGuids = 
+build_property.ProjectTypeGuids = 
+build_property.InvariantGlobalization = false
+build_property.InvariantGlobalization = false
+build_property.PlatformNeutralAssembly = 
+build_property.PlatformNeutralAssembly = 
+build_property.EnforceExtendedAnalyzerRules = 
+build_property.EnforceExtendedAnalyzerRules = 
+build_property._SupportedPlatformList = Linux,macOS,Windows
+build_property._SupportedPlatformList = Linux,macOS,Windows
+build_property.RootNamespace = JobBridge
+build_property.RootNamespace = JobBridge
+build_property.ProjectDir = /home/kyei-ernest/CSE325TeamProject/JobBridge/
+build_property.EnableComHosting = 
+build_property.EnableGeneratedComInterfaceComImportInterop = 
+build_property.RazorLangVersion = 9.0
+build_property.SupportLocalizedComponentNames = 
+build_property.GenerateRazorMetadataSourceChecksumAttributes = 
+build_property.MSBuildProjectDirectory = /home/kyei-ernest/CSE325TeamProject/JobBridge
+build_property._RazorSourceGeneratorDebug = 
+build_property.EffectiveAnalysisLevelStyle = 9.0
+build_property.EnableCodeStyleSeverity = 
+
+[/home/kyei-ernest/CSE325TeamProject/JobBridge/Components/App.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9BcHAucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/kyei-ernest/CSE325TeamProject/JobBridge/Components/Common/LoadingSpinner.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9Db21tb24vTG9hZGluZ1NwaW5uZXIucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/kyei-ernest/CSE325TeamProject/JobBridge/Components/Common/StatisticsCard.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9Db21tb24vU3RhdGlzdGljc0NhcmQucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/kyei-ernest/CSE325TeamProject/JobBridge/Components/Layout/ErrorDisplay.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9MYXlvdXQvRXJyb3JEaXNwbGF5LnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/kyei-ernest/CSE325TeamProject/JobBridge/Components/Pages/Apply.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9BcHBseS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/kyei-ernest/CSE325TeamProject/JobBridge/Components/Pages/Authentication/Authentication.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9BdXRoZW50aWNhdGlvbi9BdXRoZW50aWNhdGlvbi5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/kyei-ernest/CSE325TeamProject/JobBridge/Components/Pages/Authentication/Logout.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9BdXRoZW50aWNhdGlvbi9Mb2dvdXQucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/kyei-ernest/CSE325TeamProject/JobBridge/Components/Pages/AuthTest.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9BdXRoVGVzdC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/kyei-ernest/CSE325TeamProject/JobBridge/Components/Pages/CompleteLogin.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9Db21wbGV0ZUxvZ2luLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/kyei-ernest/CSE325TeamProject/JobBridge/Components/Pages/Dashboard.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9EYXNoYm9hcmQucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/kyei-ernest/CSE325TeamProject/JobBridge/Components/Pages/Error.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9FcnJvci5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/kyei-ernest/CSE325TeamProject/JobBridge/Components/Pages/ErrorTest.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9FcnJvclRlc3QucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/kyei-ernest/CSE325TeamProject/JobBridge/Components/Pages/Home.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9Ib21lLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/kyei-ernest/CSE325TeamProject/JobBridge/Components/Pages/Profile/EmployerProfile.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9Qcm9maWxlL0VtcGxveWVyUHJvZmlsZS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/kyei-ernest/CSE325TeamProject/JobBridge/Components/Pages/Profile/JobSeekerProfile.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9Qcm9maWxlL0pvYlNlZWtlclByb2ZpbGUucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/kyei-ernest/CSE325TeamProject/JobBridge/Components/Pages/SavedSearches.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9TYXZlZFNlYXJjaGVzLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/kyei-ernest/CSE325TeamProject/JobBridge/Components/Pages/ServerLogin.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9TZXJ2ZXJMb2dpbi5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/kyei-ernest/CSE325TeamProject/JobBridge/Components/Pages/User/Profile.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9Vc2VyL1Byb2ZpbGUucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/kyei-ernest/CSE325TeamProject/JobBridge/Components/Routes.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9Sb3V0ZXMucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/kyei-ernest/CSE325TeamProject/JobBridge/Components/_Imports.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9fSW1wb3J0cy5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/kyei-ernest/CSE325TeamProject/JobBridge/Components/Common/FilterPanel.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9Db21tb24vRmlsdGVyUGFuZWwucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = b-t9znlif5sl
+
+[/home/kyei-ernest/CSE325TeamProject/JobBridge/Components/Common/Jobcard.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9Db21tb24vSm9iY2FyZC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = b-igi6j2294j
+
+[/home/kyei-ernest/CSE325TeamProject/JobBridge/Components/Common/SearchBar.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9Db21tb24vU2VhcmNoQmFyLnJhem9y
+build_metadata.AdditionalFiles.CssScope = b-0c17pftex4
+
+[/home/kyei-ernest/CSE325TeamProject/JobBridge/Components/Layout/Footer.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9MYXlvdXQvRm9vdGVyLnJhem9y
+build_metadata.AdditionalFiles.CssScope = b-9693c0ywn2
+
+[/home/kyei-ernest/CSE325TeamProject/JobBridge/Components/Layout/MainLayout.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9MYXlvdXQvTWFpbkxheW91dC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = b-0ho4zvaa6q
+
+[/home/kyei-ernest/CSE325TeamProject/JobBridge/Components/Layout/NavMenu.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9MYXlvdXQvTmF2TWVudS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = b-lxds18er2d
+
+[/home/kyei-ernest/CSE325TeamProject/JobBridge/Components/Pages/Admin/AdminJobModeration.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9BZG1pbi9BZG1pbkpvYk1vZGVyYXRpb24ucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = b-x4jz8n77sq
+
+[/home/kyei-ernest/CSE325TeamProject/JobBridge/Components/Pages/Admin/AdminReports.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9BZG1pbi9BZG1pblJlcG9ydHMucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = b-qoyr4c6b62
+
+[/home/kyei-ernest/CSE325TeamProject/JobBridge/Components/Pages/Admin/AdminSettings.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9BZG1pbi9BZG1pblNldHRpbmdzLnJhem9y
+build_metadata.AdditionalFiles.CssScope = b-t9zk2z17vz
+
+[/home/kyei-ernest/CSE325TeamProject/JobBridge/Components/Pages/Admin/AdminUserManagement.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9BZG1pbi9BZG1pblVzZXJNYW5hZ2VtZW50LnJhem9y
+build_metadata.AdditionalFiles.CssScope = b-r5f53p4gab
+
+[/home/kyei-ernest/CSE325TeamProject/JobBridge/Components/Pages/Admin/Dashboard.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9BZG1pbi9EYXNoYm9hcmQucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = b-uzxmnivb6u
+
+[/home/kyei-ernest/CSE325TeamProject/JobBridge/Components/Pages/Dashboards/EmployerDashboard.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9EYXNoYm9hcmRzL0VtcGxveWVyRGFzaGJvYXJkLnJhem9y
+build_metadata.AdditionalFiles.CssScope = b-g1oeuqnksy
+
+[/home/kyei-ernest/CSE325TeamProject/JobBridge/Components/Pages/Dashboards/JobSeekerDashboard.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9EYXNoYm9hcmRzL0pvYlNlZWtlckRhc2hib2FyZC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = b-aiuc49vmee
+
+[/home/kyei-ernest/CSE325TeamProject/JobBridge/Components/Pages/Employer/JobCreate.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9FbXBsb3llci9Kb2JDcmVhdGUucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = b-hg0yfhwuso
+
+[/home/kyei-ernest/CSE325TeamProject/JobBridge/Components/Pages/Employer/JobEdit.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9FbXBsb3llci9Kb2JFZGl0LnJhem9y
+build_metadata.AdditionalFiles.CssScope = b-84usacxldr
+
+[/home/kyei-ernest/CSE325TeamProject/JobBridge/Components/Pages/Employer/JobManagement.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9FbXBsb3llci9Kb2JNYW5hZ2VtZW50LnJhem9y
+build_metadata.AdditionalFiles.CssScope = b-lpwidyk1ep
+
+[/home/kyei-ernest/CSE325TeamProject/JobBridge/Components/Pages/Jobs/JobDetails.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9Kb2JzL0pvYkRldGFpbHMucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = b-0bcq51by4z
+
+[/home/kyei-ernest/CSE325TeamProject/JobBridge/Components/Pages/Jobs/JobListings.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9Kb2JzL0pvYkxpc3RpbmdzLnJhem9y
+build_metadata.AdditionalFiles.CssScope = b-vjjg1csict
